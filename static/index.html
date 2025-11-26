@@ -1,78 +1,550 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>EduSimplify</title>
+  <meta charset="UTF-8" />
+  <title>EduSimplify – Simplification & CECRL</title>
   <style>
     body {
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      max-width: 820px;
-      margin: 40px auto;
-      padding: 0 16px;
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      padding: 0;
+      background: #f5f5f5;
     }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      color: #222;
+    }
+
     textarea {
       width: 100%;
-      min-height: 160px;
+      height: 120px;
       padding: 10px;
-      font-size: 15px;
+      font-size: 1rem;
+      margin-top: 0.5rem;
+      border-radius: 5px;
+      border: 1px solid #aaa;
+      resize: vertical;
     }
-    .result-box {
-      background: #f4f4f4;
-      padding: 16px;
-      border-radius: 8px;
-      white-space: pre-wrap;
-      margin-top: 20px;
-    }
+
     button {
-      padding: 10px 18px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      background: #007bff;
+      padding: 10px 16px;
+      background: #333;
       color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-top: 10px;
+    }
+
+    button:disabled {
+      background: #777;
+      cursor: not-allowed;
+    }
+
+    .result-box {
+      background: white;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 18px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    .title {
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    .word-hard   { background: #ffcccc; padding: 0 2px; border-radius: 3px; }
+    .word-medium { background: #fff3cd; padding: 0 2px; border-radius: 3px; }
+    .word-easy   { background: #d4edda; padding: 0 2px; border-radius: 3px; }
+
+    .diagnostic-list {
+      margin-top: 8px;
+      padding-left: 20px;
     }
   </style>
 </head>
 
 <body>
-  <h1>EduSimplify</h1>
-  <p>Collez un texte en français, puis cliquez sur Simplifier.</p>
 
-  <textarea id="inputText" placeholder="Entrez votre texte ici..."></textarea>
-  <br><br>
-  <button id="simplifyBtn">Simplifier</button>
+  <h1>EduSimplify – Simplification du texte & analyse CECRL</h1>
 
-  <div class="result-box" id="output"></div>
+  <label for="input-text">Texte à simplifier</label>
+  <textarea id="input-text" placeholder="Entrez un texte en français…"></textarea>
 
+  <div style="margin-top: 1rem;">
+    <strong>Mode de simplification :</strong><br>
+    <label><input type="radio" name="mode" value="light"> Light</label>
+    <label><input type="radio" name="mode" value="standard" checked> Standard</label>
+    <label><input type="radio" name="mode" value="strong"> Strong</label>
+  </div>
+
+  <div style="margin-top: 1rem;">
+    <strong>Stratégie :</strong><br>
+    <label><input type="radio" name="strategy" value="auto" checked> Automatique</label>
+    <label><input type="radio" name="strategy" value="target"> Choisir un niveau CECRL</label>
+
+    <select id="target-level" disabled>
+      <option value="">-- Choisir --</option>
+      <option value="A1">A1</option>
+      <option value="A2">A2</option>
+      <option value="B1">B1</option>
+      <option value="B2">B2</option>
+      <option value="C1">C1</option>
+    </select>
+  </div>
+
+  <button id="simplify-btn">⚙️ Simplifier et analyser</button>
+
+  <!-- Boîte CECRL -->
+  <div class="result-box" style="margin-top: 20px;">
+    <h3>📘 Niveau CECRL</h3>
+    <p id="cefr-level-line">Niveau détecté : —</p>
+    <p id="cefr-description" style="font-size: 0.9rem; color: #444;"></p>
+    <p id="cefr-strategy" style="font-size: 0.85rem; color: #555;"></p>
+  </div>
+
+  <!-- Texte original -->
+  <div class="result-box">
+    <div class="title">Texte original</div>
+    <p id="original-meta"></p>
+    <p id="original-band"></p>
+    <p id="original-explanation"></p>
+    <p><strong>Diagnostic lexical :</strong></p>
+    <div id="original-diagnostic"></div>
+    <div id="original-text-box" style="margin-top: 10px; white-space: pre-wrap;"></div>
+  </div>
+
+  <!-- Texte simplifié -->
+  <div class="result-box">
+    <div class="title">Texte simplifié</div>
+    <p id="simplified-meta"></p>
+    <p id="simplified-band"></p>
+    <p id="simplified-explanation"></p>
+    <div id="simplified-text-box" style="margin-top: 10px; white-space: pre-wrap;"></div>
+
+    <!-- TTS avec vitesse + genre -->
+    <div style="margin-top: 0.75rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
+      <button id="tts-btn" type="button">🔊 Lire le texte simplifié</button>
+
+      <label style="font-size: 0.85rem;">
+        Vitesse :
+        <select id="tts-speed">
+          <option value="slow">Lent</option>
+          <option value="normal" selected>Normal</option>
+          <option value="fast">Rapide</option>
+        </select>
+      </label>
+
+      <label style="font-size: 0.85rem;">
+        Voix :
+        <select id="tts-voice-gender">
+          <option value="auto" selected>Automatique</option>
+          <option value="female">Féminine</option>
+          <option value="male">Masculine</option>
+        </select>
+      </label>
+
+      <span id="tts-status" style="font-size: 0.85rem; color: #555;"></span>
+    </div>
+  </div>
+
+  <!-- Explication de la stratégie -->
+  <div class="result-box">
+    <h3>🧠 Explication de la stratégie</h3>
+    <div id="strategy-explanation"></div>
+  </div>
+
+  <!-- SCRIPT -->
   <script>
-    const button = document.getElementById("simplifyBtn");
-    const input = document.getElementById("inputText");
-    const output = document.getElementById("output");
+    const simplifyBtn = document.getElementById("simplify-btn");
+    const inputText = document.getElementById("input-text");
+    const targetLevelSelect = document.getElementById("target-level");
 
-    button.addEventListener("click", async () => {
-      const text = input.value.trim();
-      if (!text) {
-        output.textContent = "Veuillez entrer un texte.";
+    // Info CECRL
+    const CEFR_LEVEL_INFO = {
+      "A1": {
+        label: "A1 – Utilisateur débutant",
+        description: "Phrases très simples, vocabulaire de base, communication possible dans des situations concrètes si l’interlocuteur aide."
+      },
+      "A2": {
+        label: "A2 – Utilisateur élémentaire",
+        description: "Peut comprendre et produire des phrases courtes sur des besoins courants."
+      },
+      "B1": {
+        label: "B1 – Utilisateur indépendant",
+        description: "Comprend les points essentiels et peut raconter des événements familiers."
+      },
+      "B2": {
+        label: "B2 – Utilisateur indépendant avancé",
+        description: "Comprend des textes plus complexes et peut argumenter avec aisance."
+      },
+      "C1": {
+        label: "C1 – Utilisateur expérimenté",
+        description: "Comprend des textes longs et exigeants, maîtrise les nuances de la langue."
+      }
+    };
+
+    function updateCefrBox(level, strategyExplanation) {
+      const levelLine = document.getElementById("cefr-level-line");
+      const descriptionEl = document.getElementById("cefr-description");
+      const strategyEl = document.getElementById("cefr-strategy");
+
+      if (!level) {
+        levelLine.textContent = "Niveau détecté : —";
+        descriptionEl.textContent = "";
+        strategyEl.textContent = strategyExplanation || "";
         return;
       }
 
-      output.textContent = "Processing...";
+      const info = CEFR_LEVEL_INFO[level] || null;
+
+      if (info) {
+        levelLine.textContent = `Niveau détecté : ${info.label}`;
+        descriptionEl.textContent = info.description;
+      } else {
+        levelLine.textContent = `Niveau détecté : ${level}`;
+        descriptionEl.textContent = "";
+      }
+
+      strategyEl.textContent = strategyExplanation || "";
+    }
+
+    // Activer/désactiver le select CECRL
+    document.querySelectorAll('input[name="strategy"]').forEach(radio => {
+      radio.addEventListener("change", () => {
+        if (radio.value === "target" && radio.checked) {
+          targetLevelSelect.disabled = false;
+        } else if (radio.value === "auto" && radio.checked) {
+          targetLevelSelect.disabled = true;
+          targetLevelSelect.value = "";
+        }
+      });
+    });
+
+    function getSelectedMode() {
+      const checked = document.querySelector('input[name="mode"]:checked');
+      return checked ? checked.value : "standard";
+    }
+
+    function getSelectedStrategy() {
+      const checked = document.querySelector('input[name="strategy"]:checked');
+      return checked ? checked.value : "auto";
+    }
+
+    // Helpers
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function escapeRegExp(str) {
+      return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    // Surlignage lexical
+    function highlightText(text, wordDifficulty) {
+      let out = escapeHtml(text);
+
+      if (!Array.isArray(wordDifficulty) || wordDifficulty.length === 0) {
+        return out;
+      }
+
+      const sorted = [...wordDifficulty].sort((a, b) => {
+        const order = { hard: 0, medium: 1, easy: 2 };
+        const da = order[a.difficulty] ?? 1;
+        const db = order[b.difficulty] ?? 1;
+        if (da !== db) return da - db;
+        return (b.form || "").length - (a.form || "").length;
+      });
+
+      for (const w of sorted) {
+        if (!w.form || !w.difficulty) continue;
+
+        let cls = "";
+        if (w.difficulty === "hard") cls = "word-hard";
+        else if (w.difficulty === "medium") cls = "word-medium";
+        else if (w.difficulty === "easy") cls = "word-easy";
+        else continue;
+
+        const pattern = new RegExp("\\b" + escapeRegExp(w.form) + "\\b", "gi");
+        out = out.replace(
+          pattern,
+          (match) => `<span class="${cls}">${match}</span>`
+        );
+      }
+
+      return out;
+    }
+
+    // Rend les métadonnées + diagnostic + surlignage pour un texte
+    function renderAnalysis(
+      analysis,
+      metaEl,
+      bandEl,
+      explanationEl,
+      diagnosticEl,
+      textBoxEl,
+      originalText
+    ) {
+      if (!analysis) {
+        if (metaEl) metaEl.textContent = "Aucune analyse disponible.";
+        if (bandEl) bandEl.textContent = "";
+        if (explanationEl) explanationEl.textContent = "";
+        if (diagnosticEl) diagnosticEl.innerHTML = "";
+        if (textBoxEl) textBoxEl.textContent = originalText || "";
+        return;
+      }
+
+      const level = analysis.estimated_level || "-";
+      const sentences = analysis.sentences ?? 0;
+      const tokens = analysis.tokens ?? 0;
+      const avgLen = analysis.avg_sentence_length?.toFixed
+        ? analysis.avg_sentence_length.toFixed(1)
+        : analysis.avg_sentence_length;
+
+      if (metaEl) {
+        metaEl.textContent = `Niveau : ${level} · Phrases : ${sentences} · Mots : ${tokens} · Longueur moyenne : ${avgLen}`;
+      }
+
+      if (bandEl) {
+        const band = analysis.level_band || [];
+        const bandText = Array.isArray(band) && band.length === 2
+          ? `${band[0]} – ${band[1]}`
+          : "";
+        const bandExpl = analysis.level_band_explanation || "";
+        bandEl.textContent = bandText ? `Bande de niveaux : ${bandText}` : "";
+        if (explanationEl) explanationEl.textContent = bandExpl;
+      } else if (explanationEl) {
+        explanationEl.textContent = analysis.explanation || "";
+      }
+
+      // Diagnostic lexical
+      if (diagnosticEl) {
+        const wordDiff = analysis.word_difficulty || [];
+        const hardWords = wordDiff.filter(w => w.difficulty === "hard");
+        if (hardWords.length === 0) {
+          diagnosticEl.innerHTML = "<p>Aucun mot rare détecté. Le vocabulaire est globalement fréquent.</p>";
+        } else {
+          const items = hardWords
+            .slice(0, 12)
+            .map(w => {
+              const countLabel = w.count > 1 ? `${w.count} occurrences` : "1 occurrence";
+              const zipf = (w.zipf ?? 0).toFixed(2);
+              return `<li><strong>${escapeHtml(w.form)}</strong> · Zipf ${zipf} · ${countLabel}</li>`;
+            })
+            .join("");
+          diagnosticEl.innerHTML = `
+            <p><strong>Mots rares détectés (${hardWords.length}) :</strong></p>
+            <ul class="diagnostic-list">${items}</ul>
+          `;
+        }
+      }
+
+      // Texte avec surlignage
+      if (textBoxEl) {
+        const wordDiff = analysis.word_difficulty || [];
+        const highlighted = highlightText(originalText || "", wordDiff);
+        textBoxEl.innerHTML = highlighted;
+      }
+    }
+
+    // Handler principal
+    simplifyBtn.addEventListener("click", async () => {
+      const text = inputText.value.trim();
+      if (!text) {
+        alert("Merci d’entrer un texte en français à simplifier.");
+        return;
+      }
+
+      const mode = getSelectedMode();
+      const strategy = getSelectedStrategy();
+      const target = targetLevelSelect.disabled ? null : (targetLevelSelect.value || null);
+
+      const payload = {
+        text: text,
+        mode: mode,
+        strategy: strategy,
+        target: target,
+      };
+
+      simplifyBtn.disabled = true;
+      simplifyBtn.textContent = "⏳ Traitement en cours…";
 
       try {
-        const response = await fetch("/api/simplify", {
+        const response = await fetch("/simplify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text })
+          body: JSON.stringify(payload),
         });
 
+        if (!response.ok) {
+          throw new Error("Erreur réseau ou serveur.");
+        }
+
         const data = await response.json();
-        output.textContent = data.simplified || "Aucune sortie.";
-      } catch (error) {
-        output.textContent = "Erreur: " + error.message;
+
+        const original = data.original || text;
+        const simplified = data.simplified || "";
+
+        const analysisOriginal = data.analysis_original || data.analysisOriginal || null;
+        const analysisSimplified = data.analysis_simplified || data.analysisSimplified || null;
+        const targetLevel = data.target_level || data.targetLevel || null;
+        const stratExp = data.strategy_explanation || data.strategyExplanation || "";
+        const strategyUsed = data.strategy || strategy;
+
+        // Original
+        renderAnalysis(
+          analysisOriginal,
+          document.getElementById("original-meta"),
+          document.getElementById("original-band"),
+          document.getElementById("original-explanation"),
+          document.getElementById("original-diagnostic"),
+          document.getElementById("original-text-box"),
+          original
+        );
+
+        // Simplified : on affiche les stats, on écrit le texte simplifié brut
+        renderAnalysis(
+          analysisSimplified,
+          document.getElementById("simplified-meta"),
+          document.getElementById("simplified-band"),
+          document.getElementById("simplified-explanation"),
+          null,
+          null,
+          simplified
+        );
+
+        const simplifiedBoxEl = document.getElementById("simplified-text-box");
+        simplifiedBoxEl.textContent = simplified || "La version simplifiée est vide.";
+
+        // Explication de stratégie
+        const strategyEl = document.getElementById("strategy-explanation");
+        let extraLine = "";
+        if (targetLevel) {
+          extraLine = `Stratégie : ${strategyUsed === "target" ? "niveau ciblé" : "auto"} · Niveau cible : ${targetLevel}`;
+        } else {
+          extraLine = `Stratégie : ${strategyUsed === "target" ? "niveau ciblé" : "auto"}`;
+        }
+
+        strategyEl.innerHTML = `
+          <p>${escapeHtml(stratExp || "")}</p>
+          <p class="mono">${escapeHtml(extraLine)}</p>
+        `;
+
+        // Boîte CECRL
+        updateCefrBox(targetLevel, stratExp);
+
+      } catch (err) {
+        console.error(err);
+        alert("Une erreur est survenue pendant la simplification.");
+      } finally {
+        simplifyBtn.disabled = false;
+        simplifyBtn.textContent = "⚙️ Simplifier et analyser";
       }
     });
+
+    // --- 🔊 TTS (Text-to-Speech) avec vitesse + voix ---
+    const ttsBtn = document.getElementById("tts-btn");
+    const ttsStatus = document.getElementById("tts-status");
+    const ttsSpeed = document.getElementById("tts-speed");
+    const ttsVoiceGender = document.getElementById("tts-voice-gender");
+
+    let ttsVoices = [];
+
+    function loadVoices() {
+      if (!("speechSynthesis" in window)) return;
+      ttsVoices = window.speechSynthesis.getVoices() || [];
+    }
+
+    if ("speechSynthesis" in window) {
+      loadVoices();
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
+    function pickFrenchVoice(genderPreference) {
+      if (!ttsVoices || ttsVoices.length === 0) return null;
+
+      const frenchVoices = ttsVoices.filter(v =>
+        (v.lang || "").toLowerCase().startsWith("fr")
+      );
+      const pool = frenchVoices.length ? frenchVoices : ttsVoices;
+
+      if (genderPreference === "male") {
+        const male = pool.find(v =>
+          /male|homme|masc/i.test(v.name) ||
+          /male|homme|masc/i.test(v.voiceURI)
+        );
+        if (male) return male;
+      }
+
+      if (genderPreference === "female") {
+        const female = pool.find(v =>
+          /female|femme|fem/i.test(v.name) ||
+          /female|femme|fem/i.test(v.voiceURI)
+        );
+        if (female) return female;
+      }
+
+      // fallback
+      return pool[0];
+    }
+
+    if (ttsBtn) {
+      ttsBtn.addEventListener("click", () => {
+        const box = document.getElementById("simplified-text-box");
+        if (!box) {
+          alert("Impossible de trouver le texte simplifié.");
+          return;
+        }
+
+        const text = box.textContent.trim();
+        if (!text) {
+          alert("Le texte simplifié est vide. Lance d’abord une simplification.");
+          return;
+        }
+
+        if (!("speechSynthesis" in window)) {
+          alert("La lecture à voix haute n’est pas supportée par ce navigateur.");
+          return;
+        }
+
+        window.speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "fr-FR";
+
+        // Vitesse
+        let rate = 1.0;
+        if (ttsSpeed && ttsSpeed.value === "slow") rate = 0.8;
+        else if (ttsSpeed && ttsSpeed.value === "fast") rate = 1.3;
+        utterance.rate = rate;
+
+        // Voix
+        const genderPref = ttsVoiceGender ? ttsVoiceGender.value : "auto";
+        const voice = pickFrenchVoice(genderPref);
+        if (voice) utterance.voice = voice;
+
+        ttsStatus.textContent = "Lecture en cours…";
+
+        utterance.onend = () => {
+          ttsStatus.textContent = "Lecture terminée.";
+          setTimeout(() => { ttsStatus.textContent = ""; }, 2000);
+        };
+
+        utterance.onerror = () => {
+          ttsStatus.textContent = "Erreur de lecture.";
+          setTimeout(() => { ttsStatus.textContent = ""; }, 2000);
+        };
+
+        window.speechSynthesis.speak(utterance);
+      });
+    }
   </script>
 
 </body>
