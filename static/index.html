@@ -1,190 +1,608 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>EduSimplify – Simplification & CECRL</title>
+  <title>EduSimplify – CEFR-Aware French Text Simplifier</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      padding: 0;
-      background: #f5f5f5;
+    :root {
+      --bg-main: #f5f5fb;
+      --bg-card: #ffffff;
+      --bg-original: #fdf7f1;
+      --bg-simplified: #f3f9ff;
+      --accent: #4b6fff;
+      --accent-soft: #e0e7ff;
+      --border-soft: #e0e0eb;
+      --text-main: #222222;
+      --text-soft: #555555;
+      --danger: #e54b4b;
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     }
 
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 0.5rem;
-      color: #222;
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-sans);
+      background: radial-gradient(circle at top left, #f6f0ff 0, #f5f5fb 40%, #f0f4ff 100%);
+      color: var(--text-main);
+    }
+
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      gap: 12px;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-area img {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+    }
+
+    .title-block h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      letter-spacing: 0.03em;
+    }
+
+    .title-block p {
+      margin: 2px 0 0;
+      font-size: 0.9rem;
+      color: var(--text-soft);
+    }
+
+    .tagline {
+      font-size: 0.85rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(75, 111, 255, 0.08);
+      color: #2f3f8f;
+      border: 1px solid rgba(75, 111, 255, 0.17);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tagline span {
+      font-size: 1rem;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 18px 18px 20px;
+      box-shadow:
+        0 18px 45px rgba(15, 23, 42, 0.04),
+        0 1px 0 rgba(15, 23, 42, 0.04);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .card + .card {
+      margin-top: 16px;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+      margin-top: 0;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    h2 span.icon {
+      font-size: 1.2rem;
+    }
+
+    h3 {
+      font-size: 0.95rem;
+      margin: 12px 0 8px;
+    }
+
+    p {
+      margin: 6px 0;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .small {
+      font-size: 0.8rem;
+      color: var(--text-soft);
     }
 
     textarea {
       width: 100%;
-      height: 120px;
-      padding: 10px;
-      font-size: 1rem;
-      margin-top: 0.5rem;
-      border-radius: 5px;
-      border: 1px solid #aaa;
+      min-height: 130px;
       resize: vertical;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border-soft);
+      font-family: inherit;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      background: #fff;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(75, 111, 255, 0.3);
+    }
+
+    .controls-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 10px;
+      align-items: center;
+    }
+
+    .controls-row > div {
+      background: #f8f9ff;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+    }
+
+    .controls-row label {
+      font-size: 0.8rem;
+      color: var(--text-soft);
+    }
+
+    .controls-row input[type="radio"] {
+      margin-right: 4px;
+    }
+
+    .controls-row select {
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      padding: 4px 6px;
+      font-size: 0.8rem;
+      background: #ffffff;
+      min-width: 80px;
+    }
+
+    .primary-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .primary-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
     }
 
     button {
-      padding: 10px 16px;
-      background: #333;
-      color: white;
+      border-radius: 999px;
       border: none;
-      border-radius: 5px;
+      padding: 8px 14px;
+      font-size: 0.85rem;
       cursor: pointer;
-      font-size: 1rem;
-      margin-top: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
     }
 
-    button:disabled {
-      background: #777;
-      cursor: not-allowed;
+    #simplify-btn {
+      background: linear-gradient(135deg, #4b6fff, #7b5cff);
+      color: #fff;
+      box-shadow: 0 10px 22px rgba(75, 111, 255, 0.35);
     }
 
-    .result-box {
-      background: white;
-      padding: 15px;
-      border-radius: 6px;
+    #simplify-btn:disabled {
+      opacity: 0.7;
+      cursor: wait;
+      box-shadow: none;
+    }
+
+    .secondary-btn {
+      background: #f2f4ff;
+      color: #24308f;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+    }
+
+    .danger-btn {
+      background: #fff2f2;
+      color: #b91c1c;
+      border: 1px solid rgba(239, 68, 68, 0.5);
+    }
+
+    .layout-two {
       margin-top: 18px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr);
+      gap: 14px;
     }
 
-    .title {
-      font-weight: bold;
-      margin-bottom: 6px;
+    .panel {
+      border-radius: 14px;
+      padding: 12px 12px 12px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: var(--bg-card);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
-    .word-hard   { background: #ffcccc; padding: 0 2px; border-radius: 3px; }
-    .word-medium { background: #fff3cd; padding: 0 2px; border-radius: 3px; }
-    .word-easy   { background: #d4edda; padding: 0 2px; border-radius: 3px; }
+    .panel.original {
+      background: var(--bg-original);
+    }
+
+    .panel.simplified {
+      background: var(--bg-simplified);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .panel-header h3 {
+      margin: 0;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.04);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: #4b5563;
+    }
+
+    .meta-line {
+      font-size: 0.8rem;
+      color: var(--text-soft);
+    }
+
+    .meta-line strong {
+      font-weight: 600;
+    }
+
+    .text-box {
+      margin-top: 6px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.75);
+      min-height: 80px;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .diagnostic {
+      margin-top: 4px;
+      font-size: 0.8rem;
+      color: var(--text-soft);
+    }
 
     .diagnostic-list {
-      margin-top: 8px;
-      padding-left: 20px;
+      padding-left: 18px;
+      margin: 4px 0 0;
+    }
+
+    .diagnostic-list li {
+      margin: 2px 0;
+    }
+
+    .word-hard {
+      background: rgba(248, 113, 113, 0.15);
+      border-bottom: 1px dotted rgba(220, 38, 38, 0.8);
+      padding: 1px 0;
+    }
+
+    .word-medium {
+      background: rgba(251, 191, 36, 0.15);
+      border-bottom: 1px dotted rgba(202, 138, 4, 0.9);
+      padding: 1px 0;
+    }
+
+    .word-easy {
+      background: rgba(34, 197, 94, 0.08);
+      border-bottom: 1px dotted rgba(22, 163, 74, 0.7);
+      padding: 1px 0;
+    }
+
+    .cefr-row {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .cefr-card {
+      border-radius: 14px;
+      padding: 10px 12px 12px;
+      background: #eef2ff;             /* softer background */
+      color: #111827;
+      box-shadow:
+        0 6px 16px rgba(15, 23, 42, 0.08);
+      border: 1px solid rgba(129, 140, 248, 0.7);
+    }
+
+    .cefr-card h3 {
+      margin: 0 0 4px;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .cefr-card p {
+      margin: 4px 0;
+      font-size: 0.8rem;
+      color: #1f2933;
+    }
+
+    .cefr-card p strong {
+      color: #111827;
+    }
+
+    .strategy-card {
+      border-radius: 14px;
+      padding: 10px 12px;
+      border: 1px dashed rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.02);
+      font-size: 0.8rem;
+    }
+
+    .tts-row {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      font-size: 0.8rem;
+    }
+
+    .tts-row select {
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      padding: 3px 7px;
+      font-size: 0.8rem;
+      background: #ffffff;
+    }
+
+    #tts-play-btn {
+      padding: 6px 10px;
+      font-size: 0.8rem;
+    }
+
+    @media (max-width: 860px) {
+      .layout-two {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .cefr-row {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .card {
+        padding: 14px;
+      }
+      .panel {
+        padding: 10px;
+      }
+      .page {
+        padding-inline: 10px;
+      }
     }
   </style>
 </head>
-
 <body>
-
-  <h1>EduSimplify – Simplification du texte & analyse CECRL</h1>
-
-  <label for="input-text">Texte à simplifier</label>
-  <textarea id="input-text" placeholder="Entrez un texte en français…"></textarea>
-
-  <div style="margin-top: 1rem;">
-    <strong>Mode de simplification :</strong><br>
-    <label><input type="radio" name="mode" value="light"> Light</label>
-    <label><input type="radio" name="mode" value="standard" checked> Standard</label>
-    <label><input type="radio" name="mode" value="strong"> Strong</label>
-  </div>
-
-  <div style="margin-top: 1rem;">
-    <strong>Stratégie :</strong><br>
-    <label><input type="radio" name="strategy" value="auto" checked> Automatique</label>
-    <label><input type="radio" name="strategy" value="target"> Choisir un niveau CECRL</label>
-
-    <select id="target-level" disabled>
-      <option value="">-- Choisir --</option>
-      <option value="A1">A1</option>
-      <option value="A2">A2</option>
-      <option value="B1">B1</option>
-      <option value="B2">B2</option>
-      <option value="C1">C1</option>
-    </select>
-  </div>
-
-  <button id="simplify-btn">⚙️ Simplifier et analyser</button>
-
-  <!-- Boîte CECRL -->
-  <div class="result-box" style="margin-top: 20px;">
-    <h3>📘 Niveau CECRL</h3>
-    <p id="cefr-level-line">Niveau détecté : —</p>
-    <p id="cefr-description" style="font-size: 0.9rem; color: #444;"></p>
-    <p id="cefr-strategy" style="font-size: 0.85rem; color: #555;"></p>
-  </div>
-
-  <!-- Texte original -->
-  <div class="result-box">
-    <div class="title">Texte original</div>
-    <p id="original-meta"></p>
-    <p id="original-band"></p>
-    <p id="original-explanation"></p>
-    <p><strong>Diagnostic lexical :</strong></p>
-    <div id="original-diagnostic"></div>
-    <div id="original-text-box" style="margin-top: 10px; white-space: pre-wrap;"></div>
-  </div>
-
-  <!-- Texte simplifié -->
-  <div class="result-box">
-    <div class="title">Texte simplifié</div>
-    <p id="simplified-meta"></p>
-    <p id="simplified-band"></p>
-    <p id="simplified-explanation"></p>
-    <div id="simplified-text-box" style="margin-top: 10px; white-space: pre-wrap;"></div>
-
-    <!-- TTS avec vitesse + genre -->
-    <div style="margin-top: 0.75rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
-      <button id="tts-btn" type="button">🔊 Lire le texte simplifié</button>
-
-      <label style="font-size: 0.85rem;">
-        Vitesse :
-        <select id="tts-speed">
-          <option value="slow">Lent</option>
-          <option value="normal" selected>Normal</option>
-          <option value="fast">Rapide</option>
-        </select>
-      </label>
-
-      <label style="font-size: 0.85rem;">
-        Voix :
-        <select id="tts-voice-gender">
-          <option value="auto" selected>Automatique</option>
-          <option value="female">Féminine</option>
-          <option value="male">Masculine</option>
-        </select>
-      </label>
-
-      <span id="tts-status" style="font-size: 0.85rem; color: #555;"></span>
+  <div class="logo-area">
+    <img src="logo.png" alt="EduSimplify logo" />
+    <div class="title-block">
+      <h1>EduSimplify</h1>
+      <p>CEFR-aware French text simplification for learners and teachers.</p>
     </div>
+  </div>  
+      <div class="tagline">
+        <span>📚</span>
+        <span>Making classical French readable from A1 to C1</span>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>
+        <span class="icon">✏️</span>
+        Paste a French text to simplify
+      </h2>
+      <p class="small">
+        Paste any French sentence or paragraph (classical or modern). EduSimplify analyses difficulty,
+        estimates a CEFR level, and generates a simplified version based on your settings.
+      </p>
+
+      <textarea id="input-text" placeholder="Example: Nonobstant les vives critiques formulées par l'opposition, le gouvernement a maintenu son cap, arguant que ces réformes étaient impératives."></textarea>
+
+      <div class="controls-row">
+        <div>
+          <strong>Mode:</strong>
+          <label><input type="radio" name="mode" value="light"> Light</label>
+          <label><input type="radio" name="mode" value="standard" checked> Standard</label>
+          <label><input type="radio" name="mode" value="strong"> Strong</label>
+        </div>
+
+        <div>
+          <strong>Strategy:</strong>
+          <label><input type="radio" name="strategy" value="auto" checked> Auto</label>
+          <label><input type="radio" name="strategy" value="target"> Target level</label>
+          <select id="target-level" disabled>
+            <option value="">CEFR level…</option>
+            <option value="A1">A1</option>
+            <option value="A2">A2</option>
+            <option value="B1">B1</option>
+            <option value="B2">B2</option>
+            <option value="C1">C1</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="primary-row">
+        <div class="primary-actions">
+          <button id="simplify-btn">⚙️ Simplify and analyse</button>
+          <button id="copy-original-btn" class="secondary-btn">📋 Copy original</button>
+          <button id="copy-simplified-btn" class="secondary-btn">📋 Copy simplified</button>
+        </div>
+        <div class="primary-actions">
+          <button id="export-txt-btn" class="secondary-btn">📝 Export .txt</button>
+          <button id="export-report-btn" class="secondary-btn">📄 Export report (.txt)</button>
+          <button id="export-pdf-btn" class="secondary-btn">🖨️ PDF preview</button>
+        </div>
+      </div>
+
+      <div class="tts-row">
+        <span>🔊 Read aloud:</span>
+        <label for="tts-target">Text</label>
+        <select id="tts-target">
+          <option value="original">Original</option>
+          <option value="simplified">Simplified</option>
+        </select>
+
+        <label for="tts-voice">Voice</label>
+        <select id="tts-voice">
+          <option value="female">Female</option>
+          <option value="male">Male</option>
+        </select>
+
+        <label for="tts-speed">Speed</label>
+        <select id="tts-speed">
+          <option value="slow">Slow</option>
+          <option value="normal" selected>Normal</option>
+          <option value="fast">Fast</option>
+        </select>
+
+        <!-- Speaker icon button -->
+        <button id="tts-play-btn" class="secondary-btn">🔈 Play</button>
+      </div>
+    </section>
+
+    <section class="layout-two">
+      <div class="panel original">
+        <div class="panel-header">
+          <h3>Original text</h3>
+          <span id="original-meta" class="meta-line">Level: — · Sentences: — · Words: —</span>
+        </div>
+        <p id="original-band" class="small"></p>
+        <p id="original-explanation" class="small"></p>
+        <div id="original-text-box" class="text-box">
+          The original text will appear here, with rare words highlighted.
+        </div>
+        <div id="original-diagnostic" class="diagnostic"></div>
+      </div>
+
+      <div class="panel simplified">
+        <div class="panel-header">
+          <h3>Simplified text</h3>
+          <span id="simplified-meta" class="meta-line">Level: — · Sentences: — · Words: —</span>
+        </div>
+        <p id="simplified-band" class="small"></p>
+        <p id="simplified-explanation" class="small"></p>
+        <div id="simplified-text-box" class="text-box">
+          The simplified version will appear here.
+        </div>
+      </div>
+    </section>
+
+    <section class="cefr-row">
+      <div class="cefr-card">
+        <h3>🎓 CEFR – Detected level</h3>
+        <p id="cefr-level-line"><strong>Detected level:</strong> —</p>
+        <p id="cefr-description">
+          The system estimates a CEFR level (A1 to C1) and shows a short pedagogical description here.
+        </p>
+        <p id="cefr-strategy" class="small"></p>
+      </div>
+
+      <div class="strategy-card">
+        <strong>🧠 Simplification strategy</strong>
+        <p id="strategy-explanation" class="small" style="margin-top: 4px;">
+          Choose a mode and a strategy, then run simplification. The details of how the text was transformed will appear here.
+        </p>
+        <p class="small">
+          No text is stored. Everything is processed locally via the FastAPI backend.
+        </p>
+      </div>
+    </section>
   </div>
 
-  <!-- Explication de la stratégie -->
-  <div class="result-box">
-    <h3>🧠 Explication de la stratégie</h3>
-    <div id="strategy-explanation"></div>
-  </div>
-
-  <!-- SCRIPT -->
   <script>
     const simplifyBtn = document.getElementById("simplify-btn");
     const inputText = document.getElementById("input-text");
     const targetLevelSelect = document.getElementById("target-level");
 
-    // Info CECRL
+    const copyOriginalBtn = document.getElementById("copy-original-btn");
+    const copySimplifiedBtn = document.getElementById("copy-simplified-btn");
+    const exportTxtBtn = document.getElementById("export-txt-btn");
+    const exportReportBtn = document.getElementById("export-report-btn");
+    const exportPdfBtn = document.getElementById("export-pdf-btn");
+
+    const ttsPlayBtn = document.getElementById("tts-play-btn");
+    const ttsTargetSelect = document.getElementById("tts-target");
+    const ttsVoiceSelect = document.getElementById("tts-voice");
+    const ttsSpeedSelect = document.getElementById("tts-speed");
+
     const CEFR_LEVEL_INFO = {
       "A1": {
-        label: "A1 – Utilisateur débutant",
-        description: "Phrases très simples, vocabulaire de base, communication possible dans des situations concrètes si l’interlocuteur aide."
+        label: "A1 – Beginner user",
+        description: "Very simple sentences, basic vocabulary, communication possible in familiar concrete situations."
       },
       "A2": {
-        label: "A2 – Utilisateur élémentaire",
-        description: "Peut comprendre et produire des phrases courtes sur des besoins courants."
+        label: "A2 – Elementary user",
+        description: "Can understand and produce short sentences about everyday needs (family, shopping, simple work)."
       },
       "B1": {
-        label: "B1 – Utilisateur indépendant",
-        description: "Comprend les points essentiels et peut raconter des événements familiers."
+        label: "B1 – Independent user",
+        description: "Can understand main points of clear speech and describe events with some fluency."
       },
       "B2": {
-        label: "B2 – Utilisateur indépendant avancé",
-        description: "Comprend des textes plus complexes et peut argumenter avec aisance."
+        label: "B2 – Upper independent user",
+        description: "Understands more complex texts and can argue with good fluency on a wide range of topics."
       },
       "C1": {
-        label: "C1 – Utilisateur expérimenté",
-        description: "Comprend des textes longs et exigeants, maîtrise les nuances de la langue."
+        label: "C1 – Proficient user",
+        description: "Understands long, demanding texts and uses the language flexibly with nuance."
       }
     };
 
@@ -194,8 +612,8 @@
       const strategyEl = document.getElementById("cefr-strategy");
 
       if (!level) {
-        levelLine.textContent = "Niveau détecté : —";
-        descriptionEl.textContent = "";
+        levelLine.innerHTML = "<strong>Detected level:</strong> —";
+        descriptionEl.textContent = "The CEFR level could not be determined for this text.";
         strategyEl.textContent = strategyExplanation || "";
         return;
       }
@@ -203,17 +621,16 @@
       const info = CEFR_LEVEL_INFO[level] || null;
 
       if (info) {
-        levelLine.textContent = `Niveau détecté : ${info.label}`;
+        levelLine.innerHTML = "<strong>Detected level:</strong> " + info.label;
         descriptionEl.textContent = info.description;
       } else {
-        levelLine.textContent = `Niveau détecté : ${level}`;
-        descriptionEl.textContent = "";
+        levelLine.innerHTML = "<strong>Detected level:</strong> " + level;
+        descriptionEl.textContent = "CEFR level not recognised in the internal table.";
       }
 
       strategyEl.textContent = strategyExplanation || "";
     }
 
-    // Activer/désactiver le select CECRL
     document.querySelectorAll('input[name="strategy"]').forEach(radio => {
       radio.addEventListener("change", () => {
         if (radio.value === "target" && radio.checked) {
@@ -235,7 +652,6 @@
       return checked ? checked.value : "auto";
     }
 
-    // Helpers
     function escapeHtml(str) {
       return str
         .replace(/&/g, "&amp;")
@@ -247,7 +663,6 @@
       return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     }
 
-    // Surlignage lexical
     function highlightText(text, wordDifficulty) {
       let out = escapeHtml(text);
 
@@ -282,7 +697,6 @@
       return out;
     }
 
-    // Rend les métadonnées + diagnostic + surlignage pour un texte
     function renderAnalysis(
       analysis,
       metaEl,
@@ -293,7 +707,7 @@
       originalText
     ) {
       if (!analysis) {
-        if (metaEl) metaEl.textContent = "Aucune analyse disponible.";
+        metaEl.textContent = "No analysis available.";
         if (bandEl) bandEl.textContent = "";
         if (explanationEl) explanationEl.textContent = "";
         if (diagnosticEl) diagnosticEl.innerHTML = "";
@@ -308,9 +722,7 @@
         ? analysis.avg_sentence_length.toFixed(1)
         : analysis.avg_sentence_length;
 
-      if (metaEl) {
-        metaEl.textContent = `Niveau : ${level} · Phrases : ${sentences} · Mots : ${tokens} · Longueur moyenne : ${avgLen}`;
-      }
+      metaEl.textContent = `Level: ${level} · Sentences: ${sentences} · Words: ${tokens} · Avg. length: ${avgLen}`;
 
       if (bandEl) {
         const band = analysis.level_band || [];
@@ -318,18 +730,17 @@
           ? `${band[0]} – ${band[1]}`
           : "";
         const bandExpl = analysis.level_band_explanation || "";
-        bandEl.textContent = bandText ? `Bande de niveaux : ${bandText}` : "";
+        bandEl.textContent = bandText ? `Level band: ${bandText}` : "";
         if (explanationEl) explanationEl.textContent = bandExpl;
       } else if (explanationEl) {
         explanationEl.textContent = analysis.explanation || "";
       }
 
-      // Diagnostic lexical
       if (diagnosticEl) {
         const wordDiff = analysis.word_difficulty || [];
         const hardWords = wordDiff.filter(w => w.difficulty === "hard");
         if (hardWords.length === 0) {
-          diagnosticEl.innerHTML = "<p>Aucun mot rare détecté. Le vocabulaire est globalement fréquent.</p>";
+          diagnosticEl.innerHTML = "<p>No rare words detected. The vocabulary is globally frequent.</p>";
         } else {
           const items = hardWords
             .slice(0, 12)
@@ -340,13 +751,12 @@
             })
             .join("");
           diagnosticEl.innerHTML = `
-            <p><strong>Mots rares détectés (${hardWords.length}) :</strong></p>
+            <p><strong>Rare words detected (${hardWords.length}):</strong></p>
             <ul class="diagnostic-list">${items}</ul>
           `;
         }
       }
 
-      // Texte avec surlignage
       if (textBoxEl) {
         const wordDiff = analysis.word_difficulty || [];
         const highlighted = highlightText(originalText || "", wordDiff);
@@ -354,11 +764,133 @@
       }
     }
 
-    // Handler principal
+    function copyToClipboard(text, label) {
+      if (!navigator.clipboard) {
+        alert("Copy is not available in this browser.");
+        return;
+      }
+      navigator.clipboard.writeText(text || "").then(
+        () => {
+          if (label) {
+            alert(label + " has been copied to the clipboard.");
+          }
+        },
+        () => {
+          alert("Unable to copy text.");
+        }
+      );
+    }
+
+    function downloadTxt(filename, content) {
+      const blob = new Blob([content || ""], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportPdfLike(original, simplified) {
+      const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>EduSimplify – Export</title>
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; padding: 24px; color: #111827; }
+    h1 { font-size: 1.4rem; margin-bottom: 0.5rem; }
+    h2 { font-size: 1.1rem; margin-top: 1.4rem; }
+    pre { background: #f9fafb; padding: 12px; border-radius: 8px; white-space: pre-wrap; }
+    .meta { font-size: 0.85rem; color: #4b5563; margin-bottom: 1rem; }
+    button { margin-top: 1rem; padding: 6px 10px; }
+  </style>
+</head>
+<body>
+  <h1>EduSimplify – Export</h1>
+  <div class="meta">Document generated from the EduSimplify interface.</div>
+  <h2>Original text</h2>
+  <pre>${escapeHtml(original || "(empty)")}</pre>
+  <h2>Simplified text</h2>
+  <pre>${escapeHtml(simplified || "(empty)")}</pre>
+  <button onclick="window.print()">🖨️ Print / Save as PDF</button>
+</body>
+</html>`;
+      const win = window.open("", "_blank");
+      if (!win) {
+        alert("Please allow pop-ups in your browser to use PDF preview.");
+        return;
+      }
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+    }
+
+    let ttsVoices = [];
+
+    function loadVoices() {
+      ttsVoices = window.speechSynthesis.getVoices();
+    }
+
+    if ("speechSynthesis" in window) {
+      loadVoices();
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
+    function pickVoice(gender) {
+      if (!ttsVoices || ttsVoices.length === 0) return null;
+      const frVoices = ttsVoices.filter(v => v.lang && v.lang.toLowerCase().startsWith("fr"));
+      if (frVoices.length === 0) return ttsVoices[0];
+
+      const pattern = gender === "female"
+        ? /female|femme|woman|frau|madame/i
+        : /male|homme|man|herr|monsieur/i;
+
+      const match = frVoices.find(v => pattern.test(v.name));
+      return match || frVoices[0];
+    }
+
+    ttsPlayBtn.addEventListener("click", () => {
+      if (!("speechSynthesis" in window)) {
+        alert("Text-to-speech is not available in this browser.");
+        return;
+      }
+
+      const target = ttsTargetSelect.value || "original";
+      const voicePref = ttsVoiceSelect.value || "female";
+      const speed = ttsSpeedSelect.value || "normal";
+
+      const originalText = document.getElementById("original-text-box").innerText || "";
+      const simplifiedText = document.getElementById("simplified-text-box").innerText || "";
+
+      const text = target === "simplified" ? simplifiedText : originalText;
+
+      if (!text.trim()) {
+        alert("There is no text to read in the selected area.");
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+
+      const utter = new SpeechSynthesisUtterance(text);
+      const voice = pickVoice(voicePref);
+      if (voice) utter.voice = voice;
+
+      if (speed === "slow") utter.rate = 0.8;
+      else if (speed === "fast") utter.rate = 1.25;
+      else utter.rate = 1.0;
+
+      utter.lang = (voice && voice.lang) || "fr-FR";
+      window.speechSynthesis.speak(utter);
+    });
+
     simplifyBtn.addEventListener("click", async () => {
       const text = inputText.value.trim();
       if (!text) {
-        alert("Merci d’entrer un texte en français à simplifier.");
+        alert("Please enter a French text to simplify.");
         return;
       }
 
@@ -374,7 +906,7 @@
       };
 
       simplifyBtn.disabled = true;
-      simplifyBtn.textContent = "⏳ Traitement en cours…";
+      simplifyBtn.textContent = "⏳ Processing…";
 
       try {
         const response = await fetch("/simplify", {
@@ -384,7 +916,7 @@
         });
 
         if (!response.ok) {
-          throw new Error("Erreur réseau ou serveur.");
+          throw new Error("Network or server error.");
         }
 
         const data = await response.json();
@@ -398,7 +930,6 @@
         const stratExp = data.strategy_explanation || data.strategyExplanation || "";
         const strategyUsed = data.strategy || strategy;
 
-        // Original
         renderAnalysis(
           analysisOriginal,
           document.getElementById("original-meta"),
@@ -409,27 +940,42 @@
           original
         );
 
-        // Simplified : on affiche les stats, on écrit le texte simplifié brut
-        renderAnalysis(
-          analysisSimplified,
-          document.getElementById("simplified-meta"),
-          document.getElementById("simplified-band"),
-          document.getElementById("simplified-explanation"),
-          null,
-          null,
-          simplified
-        );
-
+        const simplifiedMetaEl = document.getElementById("simplified-meta");
+        const simplifiedBandEl = document.getElementById("simplified-band");
+        const simplifiedExplEl = document.getElementById("simplified-explanation");
         const simplifiedBoxEl = document.getElementById("simplified-text-box");
-        simplifiedBoxEl.textContent = simplified || "La version simplifiée est vide.";
 
-        // Explication de stratégie
+        if (analysisSimplified) {
+          const level = analysisSimplified.estimated_level || "-";
+          const sents = analysisSimplified.sentences ?? 0;
+          const toks = analysisSimplified.tokens ?? 0;
+          const avgLen = analysisSimplified.avg_sentence_length?.toFixed
+            ? analysisSimplified.avg_sentence_length.toFixed(1)
+            : analysisSimplified.avg_sentence_length;
+
+          simplifiedMetaEl.textContent = `Level: ${level} · Sentences: ${sents} · Words: ${toks} · Avg. length: ${avgLen}`;
+
+          const band = analysisSimplified.level_band || [];
+          const bandText = Array.isArray(band) && band.length === 2
+            ? `${band[0]} – ${band[1]}`
+            : "";
+          const bandExpl = analysisSimplified.level_band_explanation || "";
+          simplifiedBandEl.textContent = bandText ? `Level band: ${bandText}` : "";
+          simplifiedExplEl.textContent = bandExpl;
+        } else {
+          simplifiedMetaEl.textContent = "No analysis available for the simplified text.";
+          simplifiedBandEl.textContent = "";
+          simplifiedExplEl.textContent = "";
+        }
+
+        simplifiedBoxEl.textContent = simplified || "The simplified version is empty.";
+
         const strategyEl = document.getElementById("strategy-explanation");
         let extraLine = "";
         if (targetLevel) {
-          extraLine = `Stratégie : ${strategyUsed === "target" ? "niveau ciblé" : "auto"} · Niveau cible : ${targetLevel}`;
+          extraLine = `Strategy: ${strategyUsed === "target" ? "target level" : "auto"} · Target level: ${targetLevel}`;
         } else {
-          extraLine = `Stratégie : ${strategyUsed === "target" ? "niveau ciblé" : "auto"}`;
+          extraLine = `Strategy: ${strategyUsed === "target" ? "target level" : "auto"}`;
         }
 
         strategyEl.innerHTML = `
@@ -437,115 +983,42 @@
           <p class="mono">${escapeHtml(extraLine)}</p>
         `;
 
-        // Boîte CECRL
-        updateCefrBox(targetLevel, stratExp);
+        updateCefrBox(
+          (analysisSimplified && analysisSimplified.estimated_level) ||
+          (analysisOriginal && analysisOriginal.estimated_level) ||
+          targetLevel,
+          stratExp
+        );
+
+        copyOriginalBtn.onclick = () => copyToClipboard(original, "Original text");
+        copySimplifiedBtn.onclick = () => copyToClipboard(simplified, "Simplified text");
+
+        exportTxtBtn.onclick = () => {
+          if (!simplified) {
+            alert("There is no simplified text to export.");
+            return;
+          }
+          downloadTxt("edusimplify_simplified.txt", simplified);
+        };
+
+        exportReportBtn.onclick = () => {
+          const content = "=== ORIGINAL TEXT ===\n\n" + (original || "(empty)") +
+            "\n\n=== SIMPLIFIED TEXT ===\n\n" + (simplified || "(empty)") + "\n";
+          downloadTxt("edusimplify_report.txt", content);
+        };
+
+        exportPdfBtn.onclick = () => {
+          exportPdfLike(original, simplified);
+        };
 
       } catch (err) {
         console.error(err);
-        alert("Une erreur est survenue pendant la simplification.");
+        alert("An error occurred during simplification.");
       } finally {
         simplifyBtn.disabled = false;
-        simplifyBtn.textContent = "⚙️ Simplifier et analyser";
+        simplifyBtn.textContent = "⚙️ Simplify and analyse";
       }
     });
-
-    // --- 🔊 TTS (Text-to-Speech) avec vitesse + voix ---
-    const ttsBtn = document.getElementById("tts-btn");
-    const ttsStatus = document.getElementById("tts-status");
-    const ttsSpeed = document.getElementById("tts-speed");
-    const ttsVoiceGender = document.getElementById("tts-voice-gender");
-
-    let ttsVoices = [];
-
-    function loadVoices() {
-      if (!("speechSynthesis" in window)) return;
-      ttsVoices = window.speechSynthesis.getVoices() || [];
-    }
-
-    if ("speechSynthesis" in window) {
-      loadVoices();
-      window.speechSynthesis.onvoiceschanged = loadVoices;
-    }
-
-    function pickFrenchVoice(genderPreference) {
-      if (!ttsVoices || ttsVoices.length === 0) return null;
-
-      const frenchVoices = ttsVoices.filter(v =>
-        (v.lang || "").toLowerCase().startsWith("fr")
-      );
-      const pool = frenchVoices.length ? frenchVoices : ttsVoices;
-
-      if (genderPreference === "male") {
-        const male = pool.find(v =>
-          /male|homme|masc/i.test(v.name) ||
-          /male|homme|masc/i.test(v.voiceURI)
-        );
-        if (male) return male;
-      }
-
-      if (genderPreference === "female") {
-        const female = pool.find(v =>
-          /female|femme|fem/i.test(v.name) ||
-          /female|femme|fem/i.test(v.voiceURI)
-        );
-        if (female) return female;
-      }
-
-      // fallback
-      return pool[0];
-    }
-
-    if (ttsBtn) {
-      ttsBtn.addEventListener("click", () => {
-        const box = document.getElementById("simplified-text-box");
-        if (!box) {
-          alert("Impossible de trouver le texte simplifié.");
-          return;
-        }
-
-        const text = box.textContent.trim();
-        if (!text) {
-          alert("Le texte simplifié est vide. Lance d’abord une simplification.");
-          return;
-        }
-
-        if (!("speechSynthesis" in window)) {
-          alert("La lecture à voix haute n’est pas supportée par ce navigateur.");
-          return;
-        }
-
-        window.speechSynthesis.cancel();
-
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = "fr-FR";
-
-        // Vitesse
-        let rate = 1.0;
-        if (ttsSpeed && ttsSpeed.value === "slow") rate = 0.8;
-        else if (ttsSpeed && ttsSpeed.value === "fast") rate = 1.3;
-        utterance.rate = rate;
-
-        // Voix
-        const genderPref = ttsVoiceGender ? ttsVoiceGender.value : "auto";
-        const voice = pickFrenchVoice(genderPref);
-        if (voice) utterance.voice = voice;
-
-        ttsStatus.textContent = "Lecture en cours…";
-
-        utterance.onend = () => {
-          ttsStatus.textContent = "Lecture terminée.";
-          setTimeout(() => { ttsStatus.textContent = ""; }, 2000);
-        };
-
-        utterance.onerror = () => {
-          ttsStatus.textContent = "Erreur de lecture.";
-          setTimeout(() => { ttsStatus.textContent = ""; }, 2000);
-        };
-
-        window.speechSynthesis.speak(utterance);
-      });
-    }
   </script>
-
 </body>
 </html>
