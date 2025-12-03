@@ -571,199 +571,104 @@
     const simplifyBtn = document.getElementById("simplify-btn");
     const inputText = document.getElementById("input-text");
     const targetLevelSelect = document.getElementById("target-level");
-
+  
     const copyOriginalBtn = document.getElementById("copy-original-btn");
     const copySimplifiedBtn = document.getElementById("copy-simplified-btn");
     const exportTxtBtn = document.getElementById("export-txt-btn");
     const exportReportBtn = document.getElementById("export-report-btn");
     const exportPdfBtn = document.getElementById("export-pdf-btn");
-
+  
     const ttsPlayBtn = document.getElementById("tts-play-btn");
     const ttsTargetSelect = document.getElementById("tts-target");
     const ttsVoiceSelect = document.getElementById("tts-voice");
     const ttsSpeedSelect = document.getElementById("tts-speed");
-
+  
     const CEFR_LEVEL_INFO = {
       "A1": {
         label: "A1 – Beginner user",
-        description: "Very simple sentences, basic vocabulary, communication possible in familiar concrete situations."
+        description:
+          "Very simple sentences, basic vocabulary, communication possible in familiar concrete situations.",
       },
       "A2": {
         label: "A2 – Elementary user",
-        description: "Can understand and produce short sentences about everyday needs (family, shopping, simple work)."
+        description:
+          "Can understand and produce short sentences about everyday needs (family, shopping, simple work).",
       },
       "B1": {
         label: "B1 – Independent user",
-        description: "Can understand main points of clear speech and describe events with some fluency."
+        description:
+          "Can understand main points of clear speech and describe events with some fluency.",
       },
       "B2": {
         label: "B2 – Upper independent user",
-        description: "Understands more complex texts and can argue with good fluency on a wide range of topics."
+        description:
+          "Understands more complex texts and can argue with good fluency on a wide range of topics.",
       },
       "C1": {
         label: "C1 – Proficient user",
-        description: "Understands long, demanding texts and uses the language flexibly with nuance."
-      }
+        description:
+          "Understands long, demanding texts and uses the language flexibly with nuance.",
+      },
     };
-
+  
     function updateCefrBox(level, strategyExplanation) {
       const levelLine = document.getElementById("cefr-level-line");
       const descriptionEl = document.getElementById("cefr-description");
       const strategyEl = document.getElementById("cefr-strategy");
-
+  
       if (!level) {
         levelLine.innerHTML = "<strong>Detected level:</strong> —";
-        descriptionEl.textContent = "The CEFR level could not be determined for this text.";
+        descriptionEl.textContent =
+          "The CEFR level has not been analysed yet. For now, only simplification is active.";
         strategyEl.textContent = strategyExplanation || "";
         return;
       }
-
+  
       const info = CEFR_LEVEL_INFO[level] || null;
-
+  
       if (info) {
         levelLine.innerHTML = "<strong>Detected level:</strong> " + info.label;
         descriptionEl.textContent = info.description;
       } else {
-        levelLine.innerHTML = "<strong>Detected level:</strong> " + level;
-        descriptionEl.textContent = "CEFR level not recognised in the internal table.";
+        levelLine.innerHTML =
+          "<strong>Detected level:</strong> " + level;
+        descriptionEl.textContent =
+          "CEFR level not recognised in the internal table.";
       }
-
+  
       strategyEl.textContent = strategyExplanation || "";
     }
-
-    document.querySelectorAll('input[name="strategy"]').forEach(radio => {
-      radio.addEventListener("change", () => {
-        if (radio.value === "target" && radio.checked) {
-          targetLevelSelect.disabled = false;
-        } else if (radio.value === "auto" && radio.checked) {
-          targetLevelSelect.disabled = true;
-          targetLevelSelect.value = "";
-        }
+  
+    document
+      .querySelectorAll('input[name="strategy"]')
+      .forEach((radio) => {
+        radio.addEventListener("change", () => {
+          if (radio.value === "target" && radio.checked) {
+            targetLevelSelect.disabled = false;
+          } else if (radio.value === "auto" && radio.checked) {
+            targetLevelSelect.disabled = true;
+            targetLevelSelect.value = "";
+          }
+        });
       });
-    });
-
+  
     function getSelectedMode() {
       const checked = document.querySelector('input[name="mode"]:checked');
       return checked ? checked.value : "standard";
     }
-
+  
     function getSelectedStrategy() {
       const checked = document.querySelector('input[name="strategy"]:checked');
       return checked ? checked.value : "auto";
     }
-
+  
     function escapeHtml(str) {
       return str
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
     }
-
-    function escapeRegExp(str) {
-      return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    }
-
-    function highlightText(text, wordDifficulty) {
-      let out = escapeHtml(text);
-
-      if (!Array.isArray(wordDifficulty) || wordDifficulty.length === 0) {
-        return out;
-      }
-
-      const sorted = [...wordDifficulty].sort((a, b) => {
-        const order = { hard: 0, medium: 1, easy: 2 };
-        const da = order[a.difficulty] ?? 1;
-        const db = order[b.difficulty] ?? 1;
-        if (da !== db) return da - db;
-        return (b.form || "").length - (a.form || "").length;
-      });
-
-      for (const w of sorted) {
-        if (!w.form || !w.difficulty) continue;
-
-        let cls = "";
-        if (w.difficulty === "hard") cls = "word-hard";
-        else if (w.difficulty === "medium") cls = "word-medium";
-        else if (w.difficulty === "easy") cls = "word-easy";
-        else continue;
-
-        const pattern = new RegExp("\\b" + escapeRegExp(w.form) + "\\b", "gi");
-        out = out.replace(
-          pattern,
-          (match) => `<span class="${cls}">${match}</span>`
-        );
-      }
-
-      return out;
-    }
-
-    function renderAnalysis(
-      analysis,
-      metaEl,
-      bandEl,
-      explanationEl,
-      diagnosticEl,
-      textBoxEl,
-      originalText
-    ) {
-      if (!analysis) {
-        metaEl.textContent = "No analysis available.";
-        if (bandEl) bandEl.textContent = "";
-        if (explanationEl) explanationEl.textContent = "";
-        if (diagnosticEl) diagnosticEl.innerHTML = "";
-        if (textBoxEl) textBoxEl.textContent = originalText || "";
-        return;
-      }
-
-      const level = analysis.estimated_level || "-";
-      const sentences = analysis.sentences ?? 0;
-      const tokens = analysis.tokens ?? 0;
-      const avgLen = analysis.avg_sentence_length?.toFixed
-        ? analysis.avg_sentence_length.toFixed(1)
-        : analysis.avg_sentence_length;
-
-      metaEl.textContent = `Level: ${level} · Sentences: ${sentences} · Words: ${tokens} · Avg. length: ${avgLen}`;
-
-      if (bandEl) {
-        const band = analysis.level_band || [];
-        const bandText = Array.isArray(band) && band.length === 2
-          ? `${band[0]} – ${band[1]}`
-          : "";
-        const bandExpl = analysis.level_band_explanation || "";
-        bandEl.textContent = bandText ? `Level band: ${bandText}` : "";
-        if (explanationEl) explanationEl.textContent = bandExpl;
-      } else if (explanationEl) {
-        explanationEl.textContent = analysis.explanation || "";
-      }
-
-      if (diagnosticEl) {
-        const wordDiff = analysis.word_difficulty || [];
-        const hardWords = wordDiff.filter(w => w.difficulty === "hard");
-        if (hardWords.length === 0) {
-          diagnosticEl.innerHTML = "<p>No rare words detected. The vocabulary is globally frequent.</p>";
-        } else {
-          const items = hardWords
-            .slice(0, 12)
-            .map(w => {
-              const countLabel = w.count > 1 ? `${w.count} occurrences` : "1 occurrence";
-              const zipf = (w.zipf ?? 0).toFixed(2);
-              return `<li><strong>${escapeHtml(w.form)}</strong> · Zipf ${zipf} · ${countLabel}</li>`;
-            })
-            .join("");
-          diagnosticEl.innerHTML = `
-            <p><strong>Rare words detected (${hardWords.length}):</strong></p>
-            <ul class="diagnostic-list">${items}</ul>
-          `;
-        }
-      }
-
-      if (textBoxEl) {
-        const wordDiff = analysis.word_difficulty || [];
-        const highlighted = highlightText(originalText || "", wordDiff);
-        textBoxEl.innerHTML = highlighted;
-      }
-    }
-
+  
     function copyToClipboard(text, label) {
       if (!navigator.clipboard) {
         alert("Copy is not available in this browser.");
@@ -780,9 +685,11 @@
         }
       );
     }
-
+  
     function downloadTxt(filename, content) {
-      const blob = new Blob([content || ""], { type: "text/plain;charset=utf-8" });
+      const blob = new Blob([content || ""], {
+        type: "text/plain;charset=utf-8",
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -792,225 +699,208 @@
       a.remove();
       URL.revokeObjectURL(url);
     }
-
+  
     function exportPdfLike(original, simplified) {
       const html = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>EduSimplify – Export</title>
-  <style>
-    body { font-family: -apple-system, system-ui, sans-serif; padding: 24px; color: #111827; }
-    h1 { font-size: 1.4rem; margin-bottom: 0.5rem; }
-    h2 { font-size: 1.1rem; margin-top: 1.4rem; }
-    pre { background: #f9fafb; padding: 12px; border-radius: 8px; white-space: pre-wrap; }
-    .meta { font-size: 0.85rem; color: #4b5563; margin-bottom: 1rem; }
-    button { margin-top: 1rem; padding: 6px 10px; }
-  </style>
-</head>
-<body>
-  <h1>EduSimplify – Export</h1>
-  <div class="meta">Document generated from the EduSimplify interface.</div>
-  <h2>Original text</h2>
-  <pre>${escapeHtml(original || "(empty)")}</pre>
-  <h2>Simplified text</h2>
-  <pre>${escapeHtml(simplified || "(empty)")}</pre>
-  <button onclick="window.print()">🖨️ Print / Save as PDF</button>
-</body>
-</html>`;
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>EduSimplify – Export</title>
+    <style>
+      body { font-family: -apple-system, system-ui, sans-serif; padding: 24px; color: #111827; }
+      h1 { font-size: 1.4rem; margin-bottom: 0.5rem; }
+      h2 { font-size: 1.1rem; margin-top: 1.4rem; }
+      pre { background: #f9fafb; padding: 12px; border-radius: 8px; white-space: pre-wrap; }
+      .meta { font-size: 0.85rem; color: #4b5563; margin-bottom: 1rem; }
+      button { margin-top: 1rem; padding: 6px 10px; }
+    </style>
+  </head>
+  <body>
+    <h1>EduSimplify – Export</h1>
+    <div class="meta">Document generated from the EduSimplify interface.</div>
+    <h2>Original text</h2>
+    <pre>${escapeHtml(original || "(empty)")}</pre>
+    <h2>Simplified text</h2>
+    <pre>${escapeHtml(simplified || "(empty)")}</pre>
+    <button onclick="window.print()">🖨️ Print / Save as PDF</button>
+  </body>
+  </html>`;
       const win = window.open("", "_blank");
       if (!win) {
-        alert("Please allow pop-ups in your browser to use PDF preview.");
+        alert(
+          "Please allow pop-ups in your browser to use PDF preview."
+        );
         return;
       }
       win.document.open();
       win.document.write(html);
       win.document.close();
     }
-
+  
+    // --- TTS support ---
     let ttsVoices = [];
-
+  
     function loadVoices() {
       ttsVoices = window.speechSynthesis.getVoices();
     }
-
+  
     if ("speechSynthesis" in window) {
       loadVoices();
       window.speechSynthesis.onvoiceschanged = loadVoices;
     }
-
+  
     function pickVoice(gender) {
       if (!ttsVoices || ttsVoices.length === 0) return null;
-      const frVoices = ttsVoices.filter(v => v.lang && v.lang.toLowerCase().startsWith("fr"));
+      const frVoices = ttsVoices.filter(
+        (v) => v.lang && v.lang.toLowerCase().startsWith("fr")
+      );
       if (frVoices.length === 0) return ttsVoices[0];
-
-      const pattern = gender === "female"
-        ? /female|femme|woman|frau|madame/i
-        : /male|homme|man|herr|monsieur/i;
-
-      const match = frVoices.find(v => pattern.test(v.name));
+  
+      const pattern =
+        gender === "female"
+          ? /female|femme|woman|frau|madame/i
+          : /male|homme|man|herr|monsieur/i;
+  
+      const match = frVoices.find((v) => pattern.test(v.name));
       return match || frVoices[0];
     }
-
+  
     ttsPlayBtn.addEventListener("click", () => {
       if (!("speechSynthesis" in window)) {
         alert("Text-to-speech is not available in this browser.");
         return;
       }
-
+  
       const target = ttsTargetSelect.value || "original";
       const voicePref = ttsVoiceSelect.value || "female";
       const speed = ttsSpeedSelect.value || "normal";
-
-      const originalText = document.getElementById("original-text-box").innerText || "";
-      const simplifiedText = document.getElementById("simplified-text-box").innerText || "";
-
+  
+      const originalText =
+        document.getElementById("original-text-box").innerText || "";
+      const simplifiedText =
+        document.getElementById("simplified-text-box").innerText || "";
+  
       const text = target === "simplified" ? simplifiedText : originalText;
-
+  
       if (!text.trim()) {
         alert("There is no text to read in the selected area.");
         return;
       }
-
+  
       window.speechSynthesis.cancel();
-
+  
       const utter = new SpeechSynthesisUtterance(text);
       const voice = pickVoice(voicePref);
       if (voice) utter.voice = voice;
-
+  
       if (speed === "slow") utter.rate = 0.8;
       else if (speed === "fast") utter.rate = 1.25;
       else utter.rate = 1.0;
-
+  
       utter.lang = (voice && voice.lang) || "fr-FR";
       window.speechSynthesis.speak(utter);
     });
-
+  
+    // --- Main simplification handler (Ollama backend) ---
     simplifyBtn.addEventListener("click", async () => {
       const text = inputText.value.trim();
       if (!text) {
         alert("Please enter a French text to simplify.");
         return;
       }
-
+  
       const mode = getSelectedMode();
       const strategy = getSelectedStrategy();
-      const target = targetLevelSelect.disabled ? null : (targetLevelSelect.value || null);
-
+      const target = targetLevelSelect.disabled
+        ? null
+        : targetLevelSelect.value || null;
+  
+      // For now we only send the raw text to the backend.
+      // We keep mode/strategy/target for future improvements.
       const payload = {
         text: text,
-        mode: mode,
-        strategy: strategy,
-        target: target,
+        // mode,
+        // strategy,
+        // target,
       };
-
+  
       simplifyBtn.disabled = true;
       simplifyBtn.textContent = "⏳ Processing…";
-
+  
       try {
-        const response = await fetch("/simplify", {
+        const response = await fetch("http://127.0.0.1:8000/simplify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-
+  
         if (!response.ok) {
           throw new Error("Network or server error.");
         }
-
+  
         const data = await response.json();
-
-        const original = data.original || text;
-        const simplified = data.simplified || "";
-
-        const analysisOriginal = data.analysis_original || data.analysisOriginal || null;
-        const analysisSimplified = data.analysis_simplified || data.analysisSimplified || null;
-        const targetLevel = data.target_level || data.targetLevel || null;
-        const stratExp = data.strategy_explanation || data.strategyExplanation || "";
-        const strategyUsed = data.strategy || strategy;
-
-        renderAnalysis(
-          analysisOriginal,
-          document.getElementById("original-meta"),
-          document.getElementById("original-band"),
-          document.getElementById("original-explanation"),
-          document.getElementById("original-diagnostic"),
-          document.getElementById("original-text-box"),
-          original
-        );
-
-        const simplifiedMetaEl = document.getElementById("simplified-meta");
-        const simplifiedBandEl = document.getElementById("simplified-band");
-        const simplifiedExplEl = document.getElementById("simplified-explanation");
-        const simplifiedBoxEl = document.getElementById("simplified-text-box");
-
-        if (analysisSimplified) {
-          const level = analysisSimplified.estimated_level || "-";
-          const sents = analysisSimplified.sentences ?? 0;
-          const toks = analysisSimplified.tokens ?? 0;
-          const avgLen = analysisSimplified.avg_sentence_length?.toFixed
-            ? analysisSimplified.avg_sentence_length.toFixed(1)
-            : analysisSimplified.avg_sentence_length;
-
-          simplifiedMetaEl.textContent = `Level: ${level} · Sentences: ${sents} · Words: ${toks} · Avg. length: ${avgLen}`;
-
-          const band = analysisSimplified.level_band || [];
-          const bandText = Array.isArray(band) && band.length === 2
-            ? `${band[0]} – ${band[1]}`
-            : "";
-          const bandExpl = analysisSimplified.level_band_explanation || "";
-          simplifiedBandEl.textContent = bandText ? `Level band: ${bandText}` : "";
-          simplifiedExplEl.textContent = bandExpl;
-        } else {
-          simplifiedMetaEl.textContent = "No analysis available for the simplified text.";
-          simplifiedBandEl.textContent = "";
-          simplifiedExplEl.textContent = "";
-        }
-
-        simplifiedBoxEl.textContent = simplified || "The simplified version is empty.";
-
-        const strategyEl = document.getElementById("strategy-explanation");
-        let extraLine = "";
-        if (targetLevel) {
-          extraLine = `Strategy: ${strategyUsed === "target" ? "target level" : "auto"} · Target level: ${targetLevel}`;
-        } else {
-          extraLine = `Strategy: ${strategyUsed === "target" ? "target level" : "auto"}`;
-        }
-
-        strategyEl.innerHTML = `
-          <p>${escapeHtml(stratExp || "")}</p>
-          <p class="mono">${escapeHtml(extraLine)}</p>
-        `;
-
-        updateCefrBox(
-          (analysisSimplified && analysisSimplified.estimated_level) ||
-          (analysisOriginal && analysisOriginal.estimated_level) ||
-          targetLevel,
-          stratExp
-        );
-
-        copyOriginalBtn.onclick = () => copyToClipboard(original, "Original text");
-        copySimplifiedBtn.onclick = () => copyToClipboard(simplified, "Simplified text");
-
+  
+        const original = text;
+        const simplified =
+          data.simplified_text || "No simplified text returned.";
+  
+        // Show texts in the two panels
+        document.getElementById("original-text-box").textContent = original;
+        document.getElementById("simplified-text-box").textContent = simplified;
+  
+        // Very simple meta info (word counts)
+        const originalWords = original
+          .split(/\s+/)
+          .filter((w) => w.trim().length > 0).length;
+        const simplifiedWords = simplified
+          .split(/\s+/)
+          .filter((w) => w.trim().length > 0).length;
+  
+        document.getElementById(
+          "original-meta"
+        ).textContent = `Original text · Words: ${originalWords}`;
+        document.getElementById(
+          "simplified-meta"
+        ).textContent = `Simplified text · Words: ${simplifiedWords}`;
+  
+        // Clear bands/explanations for now (CEFR will come later)
+        document.getElementById("original-band").textContent = "";
+        document.getElementById("original-explanation").textContent = "";
+        document.getElementById("original-diagnostic").innerHTML = "";
+  
+        document.getElementById("simplified-band").textContent = "";
+        document.getElementById("simplified-explanation").textContent = "";
+  
+        // Keep copy + export buttons working
+        copyOriginalBtn.onclick = () =>
+          copyToClipboard(original, "Original text");
+        copySimplifiedBtn.onclick = () =>
+          copyToClipboard(simplified, "Simplified text");
+  
         exportTxtBtn.onclick = () => {
-          if (!simplified) {
-            alert("There is no simplified text to export.");
-            return;
-          }
           downloadTxt("edusimplify_simplified.txt", simplified);
         };
-
+  
         exportReportBtn.onclick = () => {
-          const content = "=== ORIGINAL TEXT ===\n\n" + (original || "(empty)") +
-            "\n\n=== SIMPLIFIED TEXT ===\n\n" + (simplified || "(empty)") + "\n";
+          const content =
+            "=== ORIGINAL TEXT ===\n\n" +
+            (original || "(empty)") +
+            "\n\n=== SIMPLIFIED TEXT ===\n\n" +
+            (simplified || "(empty)") +
+            "\n";
           downloadTxt("edusimplify_report.txt", content);
         };
-
+  
         exportPdfBtn.onclick = () => {
           exportPdfLike(original, simplified);
         };
-
+  
+        // CEFR box: just a placeholder message for now
+        updateCefrBox(
+          null,
+          "CEFR analysis will be added later. For now, the system focuses on text simplification powered by Ollama."
+        );
       } catch (err) {
         console.error(err);
         alert("An error occurred during simplification.");
@@ -1020,5 +910,6 @@
       }
     });
   </script>
+   
 </body>
 </html>
