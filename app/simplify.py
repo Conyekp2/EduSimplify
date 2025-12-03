@@ -1,9 +1,11 @@
 import re
 from typing import Optional
 
+import requests
 import spacy
 from wordfreq import zipf_frequency
 
+# Assuming analyze_text is available in the same package
 from .cefr import analyze_text
 
 # -------------------------------------------------
@@ -24,7 +26,6 @@ except OSError:
 def elevate_for_c1(text: str) -> str:
     """
     Réécritures plus soutenues pour le niveau C1.
-    Ce bloc peut être enrichi progressivement avec d'autres motifs.
     """
     replacements = [
         ("Je vais à l'école", "Je me rends à l'école"),
@@ -65,7 +66,6 @@ EASY_CONNECTORS = {
 def simplify_connectors(text: str) -> str:
     """
     Remplace certains connecteurs plus difficiles par des équivalents plus simples.
-    Garde la majuscule si le mot original commence par une majuscule.
     """
     out = text
     for hard, easy in EASY_CONNECTORS.items():
@@ -83,8 +83,7 @@ def simplify_connectors(text: str) -> str:
 
 def split_long_sentences(text: str, max_len: int = 22) -> str:
     """
-    Découpe les phrases longues aux virgules/points-virgules pour respecter une longueur maximale.
-    max_len = nombre maximum de mots par segment.
+    Découpe les phrases longues aux virgules/points-virgules.
     """
     temp_text = text.replace(";", ",")
     doc = nlp(temp_text)
@@ -159,9 +158,6 @@ LEXICAL_SUBSTITUTIONS = {
 def apply_lexical_rules(text: str, target_level: Optional[str]) -> str:
     """
     Substitution lexicale guidée par la fréquence des mots et le niveau cible.
-    - Pour A1/A2/B1 : on vise les mots rares (Zipf <= 3.5) parmi NOUN/ADJ/ADV/VERB,
-      lorsqu'ils ont une substitution connue.
-    - Pour B2/C1 : on laisse le lexique plus riche.
     """
     if target_level is None:
         return text
@@ -300,14 +296,12 @@ PHRASAL_SUBSTITUTIONS = {
 def apply_phrasal_rules(text: str, target_level: Optional[str]) -> str:
     """
     Simplification de groupes de mots (expressions figées, tournures académiques).
-    On les applique surtout pour A1/A2/B1.
     """
     if target_level is None:
         return text
 
     target_level = target_level.upper()
     if target_level not in {"A1", "A2", "B1"}:
-        # Pour B2/C1, on garde souvent ces expressions
         return text
 
     out = text
@@ -331,10 +325,7 @@ ADJ_INTENSITY = {
 
 def apply_pattern_rules(text: str, target_level: Optional[str]) -> str:
     """
-    Règles générales sur des structures typiques fréquentes :
-    - 'Il est ADJ de...' -> simplifications selon le niveau
-    - passif simple 'est réalisé/est effectué...' -> 'est fait par'
-    - cas très simples de sujet répété
+    Règles générales sur des structures typiques fréquentes.
     """
     if target_level is None:
         return text
@@ -350,18 +341,15 @@ def apply_pattern_rules(text: str, target_level: Optional[str]) -> str:
         intensity = ADJ_INTENSITY.get(adj, adj)
 
         if target_level in {"B1", "B2"}:
-            # B1/B2 : "C'est important de ..."
             return f"C'est {intensity} de"
         elif target_level in {"A1", "A2"}:
-            # A1/A2 : "C'est important. On doit ..."
             return f"C'est {intensity}. On doit"
         else:
-            # C1 : on laisse la structure telle quelle
             return match.group(0)
 
     out = re.sub(pattern_adj, repl_adj, out)
 
-    # Passif simple pour A1/A2 : "est réalisé/est effectué/est conduit/..." -> "est fait par"
+    # Passif simple pour A1/A2
     if target_level in {"A1", "A2"}:
         out = re.sub(
             r"\b[Ee]st (effectué|réalisé|conduit|demandé|étudié|analysé) par\b",
@@ -370,8 +358,7 @@ def apply_pattern_rules(text: str, target_level: Optional[str]) -> str:
             flags=re.IGNORECASE,
         )
 
-    # Cas très simple de sujet répété :
-    # "Le chat court et le chat mange" -> "Le chat court et mange"
+    # Cas très simple de sujet répété
     out = re.sub(
         r"(\b\w+\s+)(et)\s+\1",
         r"\1\2 ",
@@ -383,7 +370,61 @@ def apply_pattern_rules(text: str, target_level: Optional[str]) -> str:
 
 
 # -------------------------------------------------
-# 6. CONFIG NIVEAUX & STRATÉGIES
+# 6. SIMPLIFICATION VIA LLM (OLLAMA)
+# -------------------------------------------------
+
+def simplify_with_llm(text: str, target_level: str = "B1") -> str:
+    """
+    Utilise un modèle Ollama local pour simplifier un texte en fonction d'un niveau CECRL.
+    On suppose qu'Ollama tourne sur localhost:11434 et qu'un modèle (ex: 'llama3')
+    est déjà installé : `ollama pull llama3`.
+    """
+    prompt = f"""
+Tu es un professeur de FLE et un expert en simplification de texte.
+
+Simplifie le texte suivant pour un apprenant de niveau {target_level} (CECRL).
+
+RÈGLES :
+- Garde tout le sens important.
+- Utilise un vocabulaire fréquent et transparent.
+- Raccourcis les phrases si nécessaire.
+- Évite le vocabulaire archaïque ou trop littéraire.
+- Ne change pas les noms propres.
+- Réponds UNIQUEMENT avec le texte simplifié, sans commentaire.
+
+Texte à simplifier :
+{text}
+    """.strip()
+
+    try:
+        resp = requests.post(
+            "http://localhost:11434/api/chat",
+            json={
+                "model": "llama3",   # adapte si tu utilises un autre modèle
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ],
+                "stream": False,
+            },
+            timeout=60,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        # Format de réponse standard de /api/chat d'Ollama
+        simplified = data.get("message", {}).get("content", "").strip()
+        if not simplified:
+            # fallback très simple si la réponse est vide
+            return text.strip()
+        return simplified
+    except Exception as e:
+        # En cas de problème (Ollama éteint, etc.), on retourne le texte original
+        # pour ne pas casser l'API.
+        print(f"[LLM ERROR] {e}")
+        return text.strip()
+
+
+# -------------------------------------------------
+# 7. CONFIG NIVEAUX & STRATÉGIES
 # -------------------------------------------------
 
 LEVEL_CONFIG = {
@@ -402,15 +443,7 @@ def _resolve_strategy(
     target: Optional[str],
 ):
     """
-    Décide comment simplifier en fonction de :
-    - mode ('light' / 'standard' / 'strong')
-    - strategy ('auto' ou 'target')
-    - target (A1–C1) si strategy='target'
-    Retourne :
-    - internal_mode : 'light'/'standard'/'strong'
-    - target_level  : niveau cible CECRL (ou niveau estimé)
-    - max_len       : longueur max de phrase
-    - explanation   : explication textuelle de la stratégie
+    Calcule le niveau cible et les paramètres de simplification.
     """
     mode = (mode or "standard").lower()
     strategy = (strategy or "auto").lower()
@@ -425,20 +458,9 @@ def _resolve_strategy(
         max_len = conf["max_len"]
 
         if target == "C1":
-            explanation = (
-                "Simplification orientée vers le niveau C1 : "
-                "conservation du sens, formulations plus soutenues et style plus formel."
-            )
-        elif target in {"A1", "A2"}:
-            explanation = (
-                f"Simplification orientée vers le niveau {target} : "
-                f"phrases courtes, vocabulaire fréquent et structures simples."
-            )
+            explanation = "Simplification vers C1 (style soutenu)."
         else:
-            explanation = (
-                f"Simplification orientée vers le niveau {target} : "
-                f"phrases d’environ {max_len} mots avec simplifications modérées."
-            )
+            explanation = f"Simplification vers {target}."
 
         return internal_mode, target, max_len, explanation
 
@@ -459,23 +481,15 @@ def _resolve_strategy(
         internal_mode = conf["mode"]
         max_len = conf["max_len"]
 
-        explanation = (
-            f"Mode automatique : texte estimé {orig_level}, "
-            f"simplifié vers un niveau proche de {target_level} "
-            f"avec des phrases plus courtes et quelques simplifications lexicales."
-        )
+        explanation = f"Mode automatique : détecté {orig_level} -> cible {target_level}."
         return internal_mode, target_level, max_len, explanation
 
     # 3) Fallback
-    default_max = 22
-    explanation = (
-        "Simplification basique selon le mode choisi, sans objectif CECRL explicite."
-    )
-    return mode, None, default_max, explanation
+    return mode, "B1", 22, "Simplification basique (fallback B1)."
 
 
 # -------------------------------------------------
-# 7. FONCTION PRINCIPALE EXPOSÉE À L’API
+# 8. FONCTION PRINCIPALE EXPOSÉE À L’API
 # -------------------------------------------------
 
 def simplify_text(
@@ -483,13 +497,13 @@ def simplify_text(
     mode: str = "standard",
     strategy: str = "auto",
     target: Optional[str] = None,
+    engine: str = "rules",
 ) -> dict:
     """
-    Pipeline de simplification complet.
-
-    - mode      : 'light' / 'standard' / 'strong'
-    - strategy  : 'auto' (choix automatique du niveau) ou 'target'
-    - target    : 'A1'..'C1' si strategy='target'
+    Pipeline de simplification avec choix du moteur.
+    
+    Args:
+        engine: "rules" (défaut) ou "llm".
     """
     original_text = text.strip()
 
@@ -501,40 +515,83 @@ def simplify_text(
             "strategy": strategy,
             "target_level": target,
             "max_len": 0,
-            "strategy_explanation": "Texte vide.",
+            "strategy_explanation": "Empty text.",
+            "analysis_original": None,
+            "analysis_simplified": None,
         }
 
+    # --- 1. BRANCHEMENT LLM ---
+    if engine == "llm":
+        # on réutilise ta logique pour choisir le niveau cible
+        internal_mode, target_level, max_len, strategy_explanation = _resolve_strategy(
+            original_text, mode, strategy, target
+        )
+
+        # appel à Ollama
+        simplified_llm = simplify_with_llm(original_text, target_level or "B1")
+
+        # analyse CECRL des deux versions
+        analysis_original = analyze_text(original_text)
+        analysis_simplified = analyze_text(simplified_llm)
+
+        return {
+            "original": original_text,
+            "simplified": simplified_llm.strip(),
+            "mode": "llm",
+            "strategy": strategy,
+            "target_level": target_level,
+            "max_len": max_len,
+            "strategy_explanation": "LLM-based simplification. " + strategy_explanation,
+            "analysis_original": analysis_original,
+            "analysis_simplified": analysis_simplified,
+        }
+
+    # --- 2. BRANCHEMENT RÈGLES (Legacy) ---
+    
+    # Calcul du niveau cible et paramètres
     internal_mode, target_level, max_len, strategy_explanation = _resolve_strategy(
         original_text, mode, strategy, target
     )
+    
+    strategy_explanation += " (Rule-based)"
+    simplified = ""
 
-    # Étape 1 : simplification des connecteurs
+    # Étape 1 : connecteurs
     simplified = simplify_connectors(original_text)
-
-    # Étape 2 : réécriture de structures typiques (Il est ADJ de..., passif, etc.)
+    
+    # Étape 2 : patterns
     simplified = apply_pattern_rules(simplified, target_level)
-
-    # Étape 3 : simplification d'expressions figées / groupes de mots
+    
+    # Étape 3 : expressions
     simplified = apply_phrasal_rules(simplified, target_level)
-
-    # Étape 4 : simplification lexicale (A1/A2/B1, mode strong)
+    
+    # Étape 4 : lexique (si mode strong)
     if internal_mode == "strong":
         simplified = apply_lexical_rules(simplified, target_level)
-
-    # Étape 5 : découpage des phrases longues
+        
+    # Étape 5 : découpage phrases
     if internal_mode in {"standard", "strong"}:
         simplified = split_long_sentences(simplified, max_len=max_len)
-
-    # Étape 6 : réécriture C1 (style plus soutenu, si demandé)
+        
+    # Étape 6 : Réécriture C1
     if target_level == "C1":
         simplified = elevate_for_c1(simplified)
 
+    # --- FINALISATION ET ANALYSE ---
+    
+    simplified = simplified.strip()
+    
+    analysis_original = analyze_text(original_text)
+    analysis_simplified = analyze_text(simplified)
+
     return {
         "original": original_text,
-        "simplified": simplified.strip(),
+        "simplified": simplified,
         "mode": internal_mode,
         "strategy": strategy,
         "target_level": target_level,
         "max_len": max_len,
         "strategy_explanation": strategy_explanation,
+        "analysis_original": analysis_original,
+        "analysis_simplified": analysis_simplified,
     }

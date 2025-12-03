@@ -10,7 +10,7 @@ A CEFR-aligned French text simplification system for learners, educators, and re
 
 ---
 
-## 🚀 Overview
+## Overview
 
 **EduSimplify** is a modern NLP-powered tool designed to simplify French texts from classical literature, academic writing, and educational contexts.  
 It supports **A1 to C1 simplification**, CEFR-aligned transformation strategies, lexical frequency analysis, sentence splitting, and text-to-speech.
@@ -23,20 +23,20 @@ The tool helps:
 
 ---
 
-## 🧠 Features
+## Features
 
-### 🔹 CEFR-aligned simplification (A1 → C1)
+### CEFR-aligned simplification (A1 → C1)
 - A1/A2 → short sentences, high-frequency words only  
 - B1/B2 → moderate simplification  
 - C1 → *elevated* academic reformulation  
 
-### 🔹 Advanced linguistic processing
+### Advanced linguistic processing
 - spaCy morpho-syntactic parsing  
 - Zipf frequency (wordfreq) for rarity detection  
 - multi-word expression simplification  
 - syntactic simplification and segmentation  
 
-### 🔹 Interactive interface
+### Interactive interface
 - side-by-side analysis  
 - lexical difficulty highlighting  
 - CEFR-level inference (auto mode)  
@@ -44,7 +44,7 @@ The tool helps:
 
 ---
 
-## 🖥️ Screenshots
+## Screenshots
 
 <p align="center">
   <img src="images/interfaceTEXT.png" width="850" />
@@ -56,7 +56,7 @@ The tool helps:
 
 ---
 
-## 📘 Full Academic Breakdown  
+## Full Academic Breakdown  
 *(Research background, linguistic analysis, experiment data, CEFR justification, classical literature challenges, etc.)*
 
 <p align="center">
@@ -67,7 +67,7 @@ The tool helps:
 
 ---
 
-## 🛠️ Installation
+## Installation
 
 ### 1. Clone the repo
 
