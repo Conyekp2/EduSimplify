@@ -47,11 +47,11 @@ The tool helps:
 ## Screenshots
 
 <p align="center">
-  <img src="images/interfaceTEXT.png" width="850" />
+  <img src="images/interfaceCECRL.png" width="850" />
 </p>
 
 <p align="center">
-  <img src="images/interfaceCECRL.png" width="850" />
+  <img src="images/interfaceTEXT.png" width="850" />
 </p>
 
 ---
