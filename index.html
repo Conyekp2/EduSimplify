@@ -284,6 +284,12 @@
       border: 1px solid rgba(148, 163, 184, 0.5);
       color: #4b5563;
     }
+    
+    .badge-blue {
+      background: #dbeafe;
+      color: #1e40af;
+      border-color: #93c5fd;
+    }
 
     .meta-line {
       font-size: 0.8rem;
@@ -349,7 +355,7 @@
     .cefr-card {
       border-radius: 14px;
       padding: 10px 12px 12px;
-      background: #eef2ff;             /* softer background */
+      background: #eef2ff;
       color: #111827;
       box-shadow:
         0 6px 16px rgba(15, 23, 42, 0.08);
@@ -404,6 +410,57 @@
       font-size: 0.8rem;
     }
 
+    /* 🔵 Floating avatar (new) */
+    .avatar-floating {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 72px;
+      height: 72px;
+      border-radius: 999px;
+      background: #ffffff;
+      box-shadow:
+        0 12px 30px rgba(15, 23, 42, 0.25),
+        0 0 0 2px rgba(79, 70, 229, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      z-index: 999;
+      animation: avatar-bounce 2.8s ease-in-out infinite;
+      cursor: pointer;
+    }
+
+    .avatar-floating img {
+      width: 100%;
+      height: 100%;
+      border-radius: 999px;
+      object-fit: cover;
+    }
+
+    .avatar-floating:hover {
+      animation-duration: 1.5s;
+      transform: translateY(-2px) scale(1.03);
+      box-shadow:
+        0 16px 40px rgba(15, 23, 42, 0.35),
+        0 0 0 2px rgba(79, 70, 229, 0.28);
+    }
+
+    @keyframes avatar-bounce {
+      0%, 100% {
+        transform: translateY(0) scale(1);
+      }
+      25% {
+        transform: translateY(-4px) scale(1.02);
+      }
+      50% {
+        transform: translateY(0) scale(1.01);
+      }
+      75% {
+        transform: translateY(3px) scale(0.99);
+      }
+    }
+
     @media (max-width: 860px) {
       .layout-two {
         grid-template-columns: minmax(0, 1fr);
@@ -431,16 +488,18 @@
   </style>
 </head>
 <body>
-  <div class="logo-area">
-    <img src="logo.png" alt="EduSimplify logo" />
-    <div class="title-block">
-      <h1>EduSimplify</h1>
-      <p>CEFR-aware French text simplification for learners and teachers.</p>
-    </div>
-  </div>  
+  <div class="page">
+    <header>
+      <div class="logo-area">
+        <img src="/static/logo.png" alt="EduSimplify logo" />
+        <div class="title-block">
+          <h1>EduSimplify</h1>
+          <p>CEFR-aware French text simplification for learners and teachers.</p>
+        </div>
+      </div>
       <div class="tagline">
         <span>📚</span>
-        <span>Making classical French readable from A1 to C1</span>
+        <span>CEFR - A1 to C1</span>
       </div>
     </header>
 
@@ -454,7 +513,7 @@
         estimates a CEFR level, and generates a simplified version based on your settings.
       </p>
 
-      <textarea id="input-text" placeholder="Example: Nonobstant les vives critiques formulées par l'opposition, le gouvernement a maintenu son cap, arguant que ces réformes étaient impératives."></textarea>
+      <textarea id="input-text" placeholder="TEXT"></textarea>
 
       <div class="controls-row">
         <div>
@@ -513,7 +572,6 @@
           <option value="fast">Fast</option>
         </select>
 
-        <!-- Speaker icon button -->
         <button id="tts-play-btn" class="secondary-btn">🔈 Play</button>
       </div>
     </section>
@@ -522,12 +580,12 @@
       <div class="panel original">
         <div class="panel-header">
           <h3>Original text</h3>
-          <span id="original-meta" class="meta-line">Level: — · Sentences: — · Words: —</span>
+          <span id="original-meta" class="meta-line">Level: — · Words: —</span>
         </div>
         <p id="original-band" class="small"></p>
         <p id="original-explanation" class="small"></p>
         <div id="original-text-box" class="text-box">
-          The original text will appear here, with rare words highlighted.
+          The original text will appear here.
         </div>
         <div id="original-diagnostic" class="diagnostic"></div>
       </div>
@@ -535,7 +593,7 @@
       <div class="panel simplified">
         <div class="panel-header">
           <h3>Simplified text</h3>
-          <span id="simplified-meta" class="meta-line">Level: — · Sentences: — · Words: —</span>
+          <span id="simplified-meta" class="meta-line">Level: — · Words: —</span>
         </div>
         <p id="simplified-band" class="small"></p>
         <p id="simplified-explanation" class="small"></p>
@@ -547,18 +605,18 @@
 
     <section class="cefr-row">
       <div class="cefr-card">
-        <h3>🎓 CEFR – Detected level</h3>
-        <p id="cefr-level-line"><strong>Detected level:</strong> —</p>
+        <h3>🎓 CEFR – Result</h3>
+        <p id="cefr-level-line"><strong>Transformation:</strong> En attente d'analyse…</p>
         <p id="cefr-description">
-          The system estimates a CEFR level (A1 to C1) and shows a short pedagogical description here.
+          Le texte est au niveau … Une explication détaillée apparaîtra ici après l'analyse.
         </p>
         <p id="cefr-strategy" class="small"></p>
       </div>
 
       <div class="strategy-card">
-        <strong> Simplification strategy</strong>
+        <strong>⚙️ Simplification strategy</strong>
         <p id="strategy-explanation" class="small" style="margin-top: 4px;">
-          Choose a mode and a strategy, then run simplification. The details of how the text was transformed will appear here.
+          La stratégie précise de simplification (découpage des phrases, choix du lexique, etc.) sera affichée ici.
         </p>
         <p class="small">
           No text is stored. Everything is processed locally via the FastAPI backend.
@@ -567,78 +625,31 @@
     </section>
   </div>
 
+  <!-- 🔵 Floating avatar using /static/avatar1.png -->
+  <div class="avatar-floating" title="Need help understanding the level?">
+    <img src="/static/avatar1.png" alt="EduSimplify assistant avatar" />
+  </div>
+
   <script>
     const simplifyBtn = document.getElementById("simplify-btn");
     const inputText = document.getElementById("input-text");
     const targetLevelSelect = document.getElementById("target-level");
-  
-    const copyOriginalBtn = document.getElementById("copy-original-btn");
-    const copySimplifiedBtn = document.getElementById("copy-simplified-btn");
-    const exportTxtBtn = document.getElementById("export-txt-btn");
-    const exportReportBtn = document.getElementById("export-report-btn");
-    const exportPdfBtn = document.getElementById("export-pdf-btn");
-  
+
+    const originalBox = document.getElementById("original-text-box");
+    const simplifiedBox = document.getElementById("simplified-text-box");
+    const originalMeta = document.getElementById("original-meta");
+    const simplifiedMeta = document.getElementById("simplified-meta");
+
+    const cefrLevelLine = document.getElementById("cefr-level-line");
+    const cefrDescription = document.getElementById("cefr-description");
+    const cefrStrategy = document.getElementById("cefr-strategy");
+    const strategyExplanationEl = document.getElementById("strategy-explanation");
+
     const ttsPlayBtn = document.getElementById("tts-play-btn");
     const ttsTargetSelect = document.getElementById("tts-target");
     const ttsVoiceSelect = document.getElementById("tts-voice");
     const ttsSpeedSelect = document.getElementById("tts-speed");
-  
-    const CEFR_LEVEL_INFO = {
-      "A1": {
-        label: "A1 – Beginner user",
-        description:
-          "Very simple sentences, basic vocabulary, communication possible in familiar concrete situations.",
-      },
-      "A2": {
-        label: "A2 – Elementary user",
-        description:
-          "Can understand and produce short sentences about everyday needs (family, shopping, simple work).",
-      },
-      "B1": {
-        label: "B1 – Independent user",
-        description:
-          "Can understand main points of clear speech and describe events with some fluency.",
-      },
-      "B2": {
-        label: "B2 – Upper independent user",
-        description:
-          "Understands more complex texts and can argue with good fluency on a wide range of topics.",
-      },
-      "C1": {
-        label: "C1 – Proficient user",
-        description:
-          "Understands long, demanding texts and uses the language flexibly with nuance.",
-      },
-    };
-  
-    function updateCefrBox(level, strategyExplanation) {
-      const levelLine = document.getElementById("cefr-level-line");
-      const descriptionEl = document.getElementById("cefr-description");
-      const strategyEl = document.getElementById("cefr-strategy");
-  
-      if (!level) {
-        levelLine.innerHTML = "<strong>Detected level:</strong> —";
-        descriptionEl.textContent =
-          "The CEFR level has not been analysed yet. For now, only simplification is active.";
-        strategyEl.textContent = strategyExplanation || "";
-        return;
-      }
-  
-      const info = CEFR_LEVEL_INFO[level] || null;
-  
-      if (info) {
-        levelLine.innerHTML = "<strong>Detected level:</strong> " + info.label;
-        descriptionEl.textContent = info.description;
-      } else {
-        levelLine.innerHTML =
-          "<strong>Detected level:</strong> " + level;
-        descriptionEl.textContent =
-          "CEFR level not recognised in the internal table.";
-      }
-  
-      strategyEl.textContent = strategyExplanation || "";
-    }
-  
+
     document
       .querySelectorAll('input[name="strategy"]')
       .forEach((radio) => {
@@ -651,265 +662,169 @@
           }
         });
       });
-  
-    function getSelectedMode() {
-      const checked = document.querySelector('input[name="mode"]:checked');
-      return checked ? checked.value : "standard";
-    }
-  
+
     function getSelectedStrategy() {
       const checked = document.querySelector('input[name="strategy"]:checked');
       return checked ? checked.value : "auto";
     }
-  
-    function escapeHtml(str) {
-      return str
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-    }
-  
-    function copyToClipboard(text, label) {
-      if (!navigator.clipboard) {
-        alert("Copy is not available in this browser.");
-        return;
-      }
-      navigator.clipboard.writeText(text || "").then(
-        () => {
-          if (label) {
-            alert(label + " has been copied to the clipboard.");
-          }
-        },
-        () => {
-          alert("Unable to copy text.");
-        }
-      );
-    }
-  
-    function downloadTxt(filename, content) {
-      const blob = new Blob([content || ""], {
-        type: "text/plain;charset=utf-8",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    }
-  
-    function exportPdfLike(original, simplified) {
-      const html = `
-  <!DOCTYPE html>
-  <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>EduSimplify – Export</title>
-    <style>
-      body { font-family: -apple-system, system-ui, sans-serif; padding: 24px; color: #111827; }
-      h1 { font-size: 1.4rem; margin-bottom: 0.5rem; }
-      h2 { font-size: 1.1rem; margin-top: 1.4rem; }
-      pre { background: #f9fafb; padding: 12px; border-radius: 8px; white-space: pre-wrap; }
-      .meta { font-size: 0.85rem; color: #4b5563; margin-bottom: 1rem; }
-      button { margin-top: 1rem; padding: 6px 10px; }
-    </style>
-  </head>
-  <body>
-    <h1>EduSimplify – Export</h1>
-    <div class="meta">Document generated from the EduSimplify interface.</div>
-    <h2>Original text</h2>
-    <pre>${escapeHtml(original || "(empty)")}</pre>
-    <h2>Simplified text</h2>
-    <pre>${escapeHtml(simplified || "(empty)")}</pre>
-    <button onclick="window.print()">🖨️ Print / Save as PDF</button>
-  </body>
-  </html>`;
-      const win = window.open("", "_blank");
-      if (!win) {
-        alert(
-          "Please allow pop-ups in your browser to use PDF preview."
-        );
-        return;
-      }
-      win.document.open();
-      win.document.write(html);
-      win.document.close();
-    }
-  
-    // --- TTS support ---
+
     let ttsVoices = [];
-  
+
     function loadVoices() {
       ttsVoices = window.speechSynthesis.getVoices();
     }
-  
+
     if ("speechSynthesis" in window) {
       loadVoices();
       window.speechSynthesis.onvoiceschanged = loadVoices;
     }
-  
+
     function pickVoice(gender) {
       if (!ttsVoices || ttsVoices.length === 0) return null;
       const frVoices = ttsVoices.filter(
         (v) => v.lang && v.lang.toLowerCase().startsWith("fr")
       );
       if (frVoices.length === 0) return ttsVoices[0];
-  
+
       const pattern =
         gender === "female"
           ? /female|femme|woman|frau|madame/i
           : /male|homme|man|herr|monsieur/i;
-  
+
       const match = frVoices.find((v) => pattern.test(v.name));
       return match || frVoices[0];
     }
-  
+
     ttsPlayBtn.addEventListener("click", () => {
       if (!("speechSynthesis" in window)) {
         alert("Text-to-speech is not available in this browser.");
         return;
       }
-  
+
       const target = ttsTargetSelect.value || "original";
       const voicePref = ttsVoiceSelect.value || "female";
       const speed = ttsSpeedSelect.value || "normal";
-  
+
       const originalText =
         document.getElementById("original-text-box").innerText || "";
       const simplifiedText =
         document.getElementById("simplified-text-box").innerText || "";
-  
+
       const text = target === "simplified" ? simplifiedText : originalText;
-  
+
       if (!text.trim()) {
         alert("There is no text to read in the selected area.");
         return;
       }
-  
+
       window.speechSynthesis.cancel();
-  
+
       const utter = new SpeechSynthesisUtterance(text);
       const voice = pickVoice(voicePref);
       if (voice) utter.voice = voice;
-  
+
       if (speed === "slow") utter.rate = 0.8;
       else if (speed === "fast") utter.rate = 1.25;
       else utter.rate = 1.0;
-  
+
       utter.lang = (voice && voice.lang) || "fr-FR";
       window.speechSynthesis.speak(utter);
     });
-  
-    // --- Main simplification handler (Ollama backend) ---
+
     simplifyBtn.addEventListener("click", async () => {
       const text = inputText.value.trim();
       if (!text) {
         alert("Please enter a French text to simplify.");
         return;
       }
-  
-      const mode = getSelectedMode();
+
       const strategy = getSelectedStrategy();
-      const target = targetLevelSelect.disabled
-        ? null
-        : targetLevelSelect.value || null;
-  
-      // For now we only send the raw text to the backend.
-      // We keep mode/strategy/target for future improvements.
+      const targetLevelInput =
+        strategy === "target" && !targetLevelSelect.disabled
+          ? targetLevelSelect.value || null
+          : null;
+
       const payload = {
         text: text,
-        // mode,
-        // strategy,
-        // target,
+        target_level: targetLevelInput,
       };
-  
+
       simplifyBtn.disabled = true;
       simplifyBtn.textContent = "⏳ Processing…";
-  
+
       try {
-        const response = await fetch("http://127.0.0.1:8000/simplify", {
+        const response = await fetch("/simplify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-  
+
         if (!response.ok) {
-          throw new Error("Network or server error.");
+          throw new Error("Network or server error: " + response.status);
         }
-  
+
         const data = await response.json();
-  
-        const original = text;
+
         const simplified =
           data.simplified_text || "No simplified text returned.";
-  
-        // Show texts in the two panels
-        document.getElementById("original-text-box").textContent = original;
-        document.getElementById("simplified-text-box").textContent = simplified;
-  
-        // Very simple meta info (word counts)
-        const originalWords = original
-          .split(/\s+/)
-          .filter((w) => w.trim().length > 0).length;
+        const levelExplanation =
+          data.level_explanation ||
+          "Le niveau CECRL du texte n'a pas pu être déterminé.";
+        const strategyText =
+          data.simplification_strategy ||
+          "La stratégie de simplification n'a pas été décrite par le modèle.";
+
+        const detectedLevel = data.detected_level || "?";
+        const finalLevel =
+          data.target_level ||
+          targetLevelInput ||
+          "?";
+
+        originalBox.textContent = text;
+        simplifiedBox.textContent = simplified;
+
+        const originalWords = text.split(/\s+/).filter(Boolean).length;
         const simplifiedWords = simplified
           .split(/\s+/)
-          .filter((w) => w.trim().length > 0).length;
-  
-        document.getElementById(
-          "original-meta"
-        ).textContent = `Original text · Words: ${originalWords}`;
-        document.getElementById(
-          "simplified-meta"
-        ).textContent = `Simplified text · Words: ${simplifiedWords}`;
-  
-        // Clear bands/explanations for now (CEFR will come later)
-        document.getElementById("original-band").textContent = "";
-        document.getElementById("original-explanation").textContent = "";
-        document.getElementById("original-diagnostic").innerHTML = "";
-  
-        document.getElementById("simplified-band").textContent = "";
-        document.getElementById("simplified-explanation").textContent = "";
-  
-        // Keep copy + export buttons working
-        copyOriginalBtn.onclick = () =>
-          copyToClipboard(original, "Original text");
-        copySimplifiedBtn.onclick = () =>
-          copyToClipboard(simplified, "Simplified text");
-  
-        exportTxtBtn.onclick = () => {
-          downloadTxt("edusimplify_simplified.txt", simplified);
-        };
-  
-        exportReportBtn.onclick = () => {
-          const content =
-            "=== ORIGINAL TEXT ===\n\n" +
-            (original || "(empty)") +
-            "\n\n=== SIMPLIFIED TEXT ===\n\n" +
-            (simplified || "(empty)") +
-            "\n";
-          downloadTxt("edusimplify_report.txt", content);
-        };
-  
-        exportPdfBtn.onclick = () => {
-          exportPdfLike(original, simplified);
-        };
-  
-        // CEFR box: just a placeholder message for now
-        updateCefrBox(
-          null,
-          "CEFR analysis will be added later. For now, the system focuses on text simplification powered by Ollama."
-        );
+          .filter(Boolean).length;
+
+        originalMeta.innerHTML =
+          `Niveau du texte original : ` +
+          `<span class="badge">${detectedLevel}</span> · Mots : ${originalWords}`;
+
+        simplifiedMeta.innerHTML =
+          `Niveau du texte simplifié : ` +
+          `<span class="badge badge-blue">${finalLevel}</span> · Mots : ${simplifiedWords}`;
+
+        cefrLevelLine.innerHTML =
+          `<strong>Transformation :</strong> du niveau ` +
+          `<span class="badge">${detectedLevel}</span> ` +
+          `vers le niveau <span class="badge badge-blue">${finalLevel}</span>`;
+
+        cefrDescription.textContent = levelExplanation;
+
+        if (strategy === "target") {
+          cefrStrategy.textContent =
+            `Niveau cible choisi : ${targetLevelInput || finalLevel}.`;
+        } else {
+          cefrStrategy.textContent =
+            `Simplification automatique vers le niveau : ${finalLevel}.`;
+        }
+
+        strategyExplanationEl.textContent = strategyText;
+
       } catch (err) {
-        console.error(err);
-        alert("An error occurred during simplification.");
+        console.error("Error during simplification:", err);
+        alert("An error occurred during simplification. See console for details.");
       } finally {
         simplifyBtn.disabled = false;
         simplifyBtn.textContent = "⚙️ Simplify and analyse";
       }
     });
-  </script>
-   
+  </script>  
 </body>
 </html>
+
+<footer style="margin-top: 24px; font-size: 0.75rem; color: #6b7280; text-align: center;">
+  © 2025 CUO | EduSimplify – NLP · EdTech. All rights reserved.
+</footer>

@@ -128,3 +128,13 @@ improved neural TTS voices
 Chinedu Onyekpere  
 NLP ‧ EdTech ‧ FLE ‧ Applied Linguistics  
 LinkedIn: https://www.linkedin.com/in/chinedu-onyekpere-5a89912a4
+
+## Ownership & License
+
+EduSimplify is a personal project created and maintained by **Chinedu Onyekpere**.
+
+The source code is released under the **MIT License**.  
+You are free to use, modify, and share it, as long as you keep the copyright
+and license notice.
+
+© 2025 – CUO | NLP · EdTech
